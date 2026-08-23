@@ -1,0 +1,32 @@
+# ─── Source corpus ──────────────────────────────────────────────────────────
+# The NotebookLM corpus is ~69 MB of copyrighted books used locally to extract
+# the research notes in docs/research/. It is NOT redistributable and must
+# never be committed. The extracted notes are original synthesis and DO ship.
+Notebook Corpus/
+
+# All PDFs stay local. Nothing in this repo needs to ship as a PDF, and this
+# is a blanket guard against a source text landing in a public repo by accident.
+*.pdf
+
+# ─── Secrets ────────────────────────────────────────────────────────────────
+# The app holds API keys in memory only and never writes them to disk, but
+# guard against a stray local config anyway.
+.env
+.env.*
+*.key
+secrets.json
+
+# ─── Tooling ────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+node_modules/
+
+# ─── OS / editor ────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp

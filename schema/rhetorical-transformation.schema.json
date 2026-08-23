@@ -1,0 +1,422 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://kaminczak.github.io/rhetorical-dynamics-studio/schema/rhetorical-transformation.schema.json",
+  "title": "RhetoricalTransformationResponse",
+  "description": "The complete response contract for the Rhetorical Dynamics Studio transformation engine. Returns the transformed text alongside a full diagnostic breakdown grounded in Graff & Birkenstein (moves), Kolln (rhetorical grammar), Swales (genre moves), and Beck/McKeown/Sprenger (vocabulary tiering). Written in strict mode: every object declares additionalProperties:false and lists every property in required, so the same document works as an Anthropic output_config.format schema and an OpenAI response_format json_schema with strict:true.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "transformed_text",
+    "transformation_summary",
+    "readability_analysis",
+    "rhetorical_stance_evaluation",
+    "syntax_and_sentence_variety",
+    "vocabulary_analysis",
+    "scaffolding_applied",
+    "actionable_revisions"
+  ],
+  "properties": {
+    "transformed_text": {
+      "type": "string",
+      "description": "The complete rewritten text, fully realized in the target grade band, pragmatic stance, and enabled scaffolding toggles. Prose only, no meta-commentary, no bracketed move labels, no headings unless the source had them."
+    },
+    "transformation_summary": {
+      "type": "string",
+      "description": "Two to three sentences, addressed to a teacher or curriculum designer, naming the highest-leverage changes made and the rhetorical reason for each."
+    },
+    "readability_analysis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "current_grade_band",
+        "target_grade_band",
+        "source_flesch_kincaid_grade_level",
+        "transformed_flesch_kincaid_grade_level",
+        "mean_sentence_length_words",
+        "conceptual_accessibility_summary"
+      ],
+      "properties": {
+        "current_grade_band": {
+          "type": "string",
+          "enum": ["Elementary", "Middle", "High School", "AP/College", "Professional"],
+          "description": "Estimated educational grade band of the SOURCE text."
+        },
+        "target_grade_band": {
+          "type": "string",
+          "enum": ["Elementary", "Middle", "High School", "AP/College", "Professional"],
+          "description": "The requested target audience grade band."
+        },
+        "source_flesch_kincaid_grade_level": {
+          "type": "number",
+          "description": "Flesch-Kincaid Grade Level of the source text: 0.39*(words/sentences) + 11.8*(syllables/words) - 15.59."
+        },
+        "transformed_flesch_kincaid_grade_level": {
+          "type": "number",
+          "description": "Flesch-Kincaid Grade Level of the transformed text, computed the same way."
+        },
+        "mean_sentence_length_words": {
+          "type": "number",
+          "description": "Average sentence length of the transformed text, in words."
+        },
+        "conceptual_accessibility_summary": {
+          "type": "string",
+          "description": "Qualitative judgment of whether complex concepts were scaffolded for the target band WITHOUT dilution. Must explicitly state whether any conceptual precision was traded away, and if so, what."
+        }
+      }
+    },
+    "rhetorical_stance_evaluation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "they_say_context",
+        "stance_type",
+        "naysayer_integration",
+        "concession_rebuttal_pivots",
+        "genre_moves"
+      ],
+      "properties": {
+        "they_say_context": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["is_established", "summary_of_context", "strength_assessment"],
+          "properties": {
+            "is_established": {
+              "type": "boolean",
+              "description": "True if the TRANSFORMED text frames its claim inside an existing conversation or counter-view before asserting a thesis (Graff & Birkenstein)."
+            },
+            "summary_of_context": {
+              "type": "string",
+              "description": "The consensus, common assumption, or counter-view the text now answers."
+            },
+            "strength_assessment": {
+              "type": "string",
+              "description": "How effectively that backdrop motivates and justifies the intervention, the so-what test."
+            }
+          }
+        },
+        "stance_type": {
+          "type": "string",
+          "enum": ["agree", "disagree", "agree_with_difference", "undecided"],
+          "description": "Primary rhetorical positioning relative to the They Say. Prefer agree_with_difference for grades 9+, since binary positions read as unsophisticated."
+        },
+        "naysayer_integration": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["is_present", "skeptic_group_identified", "objection_handling_critique"],
+          "properties": {
+            "is_present": { "type": "boolean" },
+            "skeptic_group_identified": {
+              "type": "string",
+              "description": "The named group or perspective of skeptics, e.g. colonial loyalists, traditionalists. Use 'none' when absent. Naming a specific group beats a generic 'some may say'."
+            },
+            "objection_handling_critique": {
+              "type": "string",
+              "description": "How successfully the text dismantles or answers the skeptic."
+            }
+          }
+        },
+        "concession_rebuttal_pivots": {
+          "type": "array",
+          "description": "Points of nuanced qualification: agreement-with-a-difference, concede-and-stand-ground, dubious-ground.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["concession_text", "rebuttal_text", "template_alignment"],
+            "properties": {
+              "concession_text": {
+                "type": "string",
+                "description": "The verbatim span conceding a minor point or validating the counter-argument."
+              },
+              "rebuttal_text": {
+                "type": "string",
+                "description": "The verbatim span pivoting back to defend the primary claim."
+              },
+              "template_alignment": {
+                "type": "string",
+                "description": "Which template this realizes, e.g. Yes-but, Though I concede X I still insist Y, or right-about-X-but-dubious-about-Y."
+              }
+            }
+          }
+        },
+        "genre_moves": {
+          "type": "array",
+          "description": "Structural CARS moves (Swales, Genre Analysis) identified in the transformed text.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["move_name", "text_segment", "rhetorical_purpose"],
+            "properties": {
+              "move_name": {
+                "type": "string",
+                "description": "e.g. Move 1: Establishing a territory; Move 2: Establishing a niche; Move 3: Occupying the niche."
+              },
+              "text_segment": {
+                "type": "string",
+                "description": "The verbatim excerpt realizing this move."
+              },
+              "rhetorical_purpose": {
+                "type": "string",
+                "description": "How the move advances the communicative purpose for this discourse community."
+              }
+            }
+          }
+        }
+      }
+    },
+    "syntax_and_sentence_variety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sentence_type_distribution", "voice_analysis", "cohesion_evaluation"],
+      "properties": {
+        "sentence_type_distribution": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "simple_count",
+            "compound_count",
+            "complex_count",
+            "compound_complex_count",
+            "variety_critique"
+          ],
+          "properties": {
+            "simple_count": {
+              "type": "integer",
+              "description": "Sentences in the TRANSFORMED text with one independent clause."
+            },
+            "compound_count": {
+              "type": "integer",
+              "description": "Two or more independent clauses, no subordinate clause."
+            },
+            "complex_count": {
+              "type": "integer",
+              "description": "One independent clause plus one or more subordinate clauses."
+            },
+            "compound_complex_count": {
+              "type": "integer",
+              "description": "Two or more independent clauses plus at least one subordinate clause."
+            },
+            "variety_critique": {
+              "type": "string",
+              "description": "Critique of rhythm, length variation, and stylistic effect (Kolln). Note deliberate short sentences used for emphasis."
+            }
+          }
+        },
+        "voice_analysis": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "active_voice_ratio",
+            "passive_voice_ratio",
+            "nominalization_density",
+            "stylistic_appropriateness"
+          ],
+          "properties": {
+            "active_voice_ratio": {
+              "type": "number",
+              "description": "Proportion of active-voice clauses, 0.0 to 1.0."
+            },
+            "passive_voice_ratio": {
+              "type": "number",
+              "description": "Proportion of passive-voice clauses, 0.0 to 1.0. Should sum to about 1.0 with active_voice_ratio."
+            },
+            "nominalization_density": {
+              "type": "string",
+              "enum": ["low", "moderate", "high"],
+              "description": "How often verbs became nouns (analysis for analyze), which abstracts away agency."
+            },
+            "stylistic_appropriateness": {
+              "type": "string",
+              "description": "Whether voice shifts are STRATEGIC: agentless passive to construct scientific objectivity, active to assign accountability, rather than accidental."
+            }
+          }
+        },
+        "cohesion_evaluation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["given_new_alignment", "cohesive_ties_critique", "repaired_cohesive_breaks"],
+          "properties": {
+            "given_new_alignment": {
+              "type": "string",
+              "enum": ["consistent", "inconsistent", "failing"],
+              "description": "Adherence to the Given-New contract: sentences open with established information and close on the new focal element."
+            },
+            "cohesive_ties_critique": {
+              "type": "string",
+              "description": "Analysis of transitions, key-term repetition, and structural links between sentences and paragraphs."
+            },
+            "repaired_cohesive_breaks": {
+              "type": "array",
+              "description": "Places where the source forced an un-bridged cognitive leap and the transformation supplied the missing bridge.",
+              "items": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "vocabulary_analysis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tier_counts",
+        "tier_2_words_identified",
+        "tier_3_words_identified",
+        "recoding_opportunities",
+        "preserved_target_terms"
+      ],
+      "properties": {
+        "tier_counts": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["tier_1", "tier_2", "tier_3"],
+          "properties": {
+            "tier_1": { "type": "integer", "description": "Everyday basic vocabulary." },
+            "tier_2": {
+              "type": "integer",
+              "description": "High-frequency general academic vocabulary: analyze, delineate, evaluate."
+            },
+            "tier_3": {
+              "type": "integer",
+              "description": "Low-frequency domain-specific terms: stoichiometry, eutrophication."
+            }
+          }
+        },
+        "tier_2_words_identified": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Key Tier 2 academic words present in the transformed text."
+        },
+        "tier_3_words_identified": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Key Tier 3 specialized terms present in the transformed text."
+        },
+        "recoding_opportunities": {
+          "type": "array",
+          "description": "Sprenger recoding loop: temporary student-friendly bridges that make a term graspable WITHOUT replacing it.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["academic_term", "suggested_informal_bridge", "pedagogical_rationale"],
+            "properties": {
+              "academic_term": {
+                "type": "string",
+                "description": "The Tier 2 or Tier 3 term retained in the text."
+              },
+              "suggested_informal_bridge": {
+                "type": "string",
+                "description": "A student-friendly metaphor or paraphrase: the temporary bridge, not a substitute."
+              },
+              "pedagogical_rationale": {
+                "type": "string",
+                "description": "Why this bridge preserves rigor while lowering cognitive load, and how instruction loops back to the formal term."
+              }
+            }
+          }
+        },
+        "preserved_target_terms": {
+          "type": "array",
+          "description": "Tier 2/3 terms deliberately KEPT rather than simplified away, honoring the no-dilution rule. Each entry pairs the term with how it was made accessible.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["term", "tier", "access_strategy"],
+            "properties": {
+              "term": { "type": "string" },
+              "tier": { "type": "string", "enum": ["Tier 2", "Tier 3"] },
+              "access_strategy": {
+                "type": "string",
+                "description": "How the term was made reachable: appositive gloss, contextual definition, concrete analogy, or morphological cue."
+              }
+            }
+          }
+        }
+      }
+    },
+    "scaffolding_applied": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sentence_stems_added", "glossed_terms", "structural_changes", "cognitive_demand_level"],
+      "properties": {
+        "sentence_stems_added": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Verbatim They Say / I Say stems embedded for student use. Empty array if the toggle was off."
+        },
+        "glossed_terms": {
+          "type": "array",
+          "description": "Terms given an inline gloss in the transformed text.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["term", "gloss"],
+            "properties": {
+              "term": { "type": "string" },
+              "gloss": {
+                "type": "string",
+                "description": "The inline definition as it appears in the transformed text."
+              }
+            }
+          }
+        },
+        "structural_changes": {
+          "type": "string",
+          "description": "Paragraph-level reorganization: what moved, what was split or merged, and why."
+        },
+        "cognitive_demand_level": {
+          "type": "string",
+          "enum": ["Remember/Understand", "Apply/Analyze", "Evaluate/Create"],
+          "description": "The Bloom/Webb band the transformed text now asks of the reader. Must match the target grade band expected demand."
+        }
+      }
+    },
+    "actionable_revisions": {
+      "type": "array",
+      "description": "Specific, teachable further revisions the human reviewer may accept or reject. This is the human-in-the-loop quality gate: surface trade-offs rather than hiding them.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "original_text_segment",
+          "proposed_text_segment",
+          "focus_area",
+          "theoretical_framework",
+          "concise_rationale"
+        ],
+        "properties": {
+          "original_text_segment": {
+            "type": "string",
+            "description": "The verbatim segment slated for modification."
+          },
+          "proposed_text_segment": {
+            "type": "string",
+            "description": "The rewritten, rhetorically transformed version."
+          },
+          "focus_area": {
+            "type": "string",
+            "enum": [
+              "Readability",
+              "Rhetorical Stance",
+              "Syntax/Sentence Variety",
+              "Vocabulary Tiering",
+              "Agency/Voice"
+            ]
+          },
+          "theoretical_framework": {
+            "type": "string",
+            "enum": [
+              "They Say / I Say",
+              "Rhetorical Grammar",
+              "Genre Analysis (Swales)",
+              "Common Core Critical Vocabulary",
+              "Metaphors We Live By"
+            ]
+          },
+          "concise_rationale": {
+            "type": "string",
+            "description": "One crisp sentence linking the syntactic or structural edit to its effect on tone, register, or authority."
+          }
+        }
+      }
+    }
+  }
+}

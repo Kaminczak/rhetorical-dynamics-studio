@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  verify:
+    name: Prompt sync + schema validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: pip install pyyaml jsonschema
+
+      - name: index.html matches the authored YAML
+        run: python tools/render_prompt.py --check
+
+      - name: Demo responses conform to the schema
+        run: python tools/validate_demo.py
+
+      - name: Application JavaScript parses
+        run: |
+          python - <<'PY'
+          import pathlib, re
+          html = pathlib.Path("index.html").read_text(encoding="utf-8")
+          script = re.findall(r"<script>(.*?)</script>", html, re.DOTALL)[-1]
+          pathlib.Path("app.check.js").write_text(script, encoding="utf-8")
+          PY
+          node --check app.check.js

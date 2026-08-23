@@ -1,0 +1,2044 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rhetorical Dynamics Studio — Tone, Register &amp; Pedagogical Transformer</title>
+  <meta name="description" content="A prompt-engineering workbench that transforms instructional text across grade bands and rhetorical stances, then shows the linguistic reasoning behind every change.">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    :root { color-scheme: dark; }
+    body { font-feature-settings: "cv02","cv03","cv04","cv11"; }
+    .scroll-thin::-webkit-scrollbar { width: 8px; height: 8px; }
+    .scroll-thin::-webkit-scrollbar-track { background: transparent; }
+    .scroll-thin::-webkit-scrollbar-thumb { background: #334155; border-radius: 999px; }
+    .scroll-thin::-webkit-scrollbar-thumb:hover { background: #475569; }
+    .tab-active { background: rgb(79 70 229); color: #fff; }
+    .fade-in { animation: fade .35s ease both; }
+    @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+    mark.gloss { background: rgba(245,158,11,.18); color: #fcd34d; border-radius: 3px; padding: 0 2px; }
+    mark.stem  { background: rgba(99,102,241,.18); color: #a5b4fc; border-radius: 3px; padding: 0 2px; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans antialiased">
+
+<!-- ══════════════════════════ HEADER ══════════════════════════ -->
+<header class="border-b border-slate-800 bg-slate-950/90 backdrop-blur sticky top-0 z-40">
+  <div class="max-w-[1600px] mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-3">
+    <div class="flex items-center gap-3">
+      <div class="bg-gradient-to-br from-indigo-500 to-violet-600 p-2 rounded-lg text-white shadow-lg shadow-indigo-900/40">
+        <i data-lucide="scan-text" class="w-5 h-5"></i>
+      </div>
+      <div>
+        <h1 class="font-bold text-lg tracking-tight text-white leading-tight">Rhetorical Dynamics Studio</h1>
+        <p class="text-[11px] text-slate-400 leading-tight">Tone, Register &amp; Pedagogical Transformer Engine</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <span id="mode-badge" class="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 flex items-center gap-1.5">
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Demo Mode
+      </span>
+      <button id="open-theory" class="text-xs bg-slate-800/80 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-md border border-slate-700 transition flex items-center gap-1.5">
+        <i data-lucide="library" class="w-3.5 h-3.5"></i> Theory
+      </button>
+      <button id="open-api" class="text-xs bg-slate-800/80 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-md border border-slate-700 transition flex items-center gap-1.5">
+        <i data-lucide="plug-zap" class="w-3.5 h-3.5"></i> Connect API
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- ══════════════════════════ MAIN ══════════════════════════ -->
+<main class="flex-1 max-w-[1600px] w-full mx-auto px-4 py-5 grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+
+  <!-- ─────────── CONTROL PANEL ─────────── -->
+  <section class="lg:col-span-4 flex flex-col gap-4 lg:sticky lg:top-[68px]">
+
+    <div class="bg-slate-900/70 rounded-xl border border-slate-800 p-4">
+      <label for="preset-selector" class="block text-[11px] font-semibold uppercase text-slate-400 tracking-wider mb-2">Instructional Preset</label>
+      <select id="preset-selector" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/60 focus:border-indigo-500">
+        <option value="custom">Custom input…</option>
+        <option value="history_8th">8th Grade History — The Stamp Act</option>
+        <option value="science_ap">AP Environmental Science — Eutrophication</option>
+        <option value="ela_ell">ELL / Elementary ELA — Character Motivation</option>
+      </select>
+    </div>
+
+    <div class="bg-slate-900/70 rounded-xl border border-slate-800 p-4 flex flex-col">
+      <div class="flex justify-between items-center mb-2">
+        <label for="source-text" class="block text-[11px] font-semibold uppercase text-slate-400 tracking-wider">Source Text</label>
+        <button id="clear-btn" class="text-[11px] text-slate-500 hover:text-slate-300 transition">Clear</button>
+      </div>
+      <textarea id="source-text" rows="8"
+        class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-[13px] text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/60 focus:border-indigo-500 resize-y leading-relaxed scroll-thin"
+        placeholder="Paste instructional text, a student writing sample, or an assignment prompt…"></textarea>
+      <!-- live, locally-computed source metrics -->
+      <div class="grid grid-cols-3 gap-2 mt-3">
+        <div class="bg-slate-950/70 rounded-lg border border-slate-800 px-2 py-1.5 text-center">
+          <div id="m-words" class="text-sm font-semibold text-slate-200 tabular-nums">0</div>
+          <div class="text-[10px] uppercase tracking-wide text-slate-500">Words</div>
+        </div>
+        <div class="bg-slate-950/70 rounded-lg border border-slate-800 px-2 py-1.5 text-center">
+          <div id="m-sentences" class="text-sm font-semibold text-slate-200 tabular-nums">0</div>
+          <div class="text-[10px] uppercase tracking-wide text-slate-500">Sentences</div>
+        </div>
+        <div class="bg-slate-950/70 rounded-lg border border-slate-800 px-2 py-1.5 text-center" title="Flesch-Kincaid Grade Level, computed in-browser">
+          <div id="m-fk" class="text-sm font-semibold text-indigo-300 tabular-nums">—</div>
+          <div class="text-[10px] uppercase tracking-wide text-slate-500">FK Grade</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-slate-900/70 rounded-xl border border-slate-800 p-4 flex flex-col gap-4">
+      <h2 class="text-xs font-semibold text-white border-b border-slate-800 pb-2 flex items-center gap-2 uppercase tracking-wider">
+        <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5 text-indigo-400"></i> The Rhetorical Matrix
+      </h2>
+
+      <div>
+        <label for="target-grade" class="block text-[11px] font-medium text-slate-300 mb-1.5">Target Grade Band</label>
+        <select id="target-grade" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-[13px] text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/60">
+          <option value="elementary_3_5">Elementary (3–5) — paratactic, high cohesion</option>
+          <option value="middle_school_6_8" selected>Middle (6–8) — Tier 2 core, guided logic</option>
+          <option value="high_school_9_10">High School (9–10) — hypotactic, embedded counter-argument</option>
+          <option value="ap_college_11_12">AP / College (11–12) — periodic cadence, high abstraction</option>
+        </select>
+        <p id="band-hint" class="text-[11px] text-slate-500 mt-1.5"></p>
+      </div>
+
+      <div>
+        <label for="pragmatic-stance" class="block text-[11px] font-medium text-slate-300 mb-1.5">Pragmatic Stance</label>
+        <select id="pragmatic-stance" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-[13px] text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/60">
+          <option value="socratic_inquiry">Socratic / Inquiry — provoke reasoning</option>
+          <option value="direct_instruction" selected>Direct Instruction — clarity &amp; signposting</option>
+          <option value="peer_to_peer">Peer-to-Peer — low affective filter</option>
+          <option value="formal_academic">Formal Academic — objectivity &amp; hedging</option>
+        </select>
+        <p id="stance-hint" class="text-[11px] text-slate-500 mt-1.5"></p>
+      </div>
+
+      <div>
+        <span class="block text-[11px] font-medium text-slate-300 mb-2">Scaffolding Toggles</span>
+        <div class="space-y-2.5">
+          <label class="flex items-start gap-2.5 text-[12px] text-slate-300 cursor-pointer group">
+            <input type="checkbox" id="toggle-stems" checked class="mt-0.5 rounded bg-slate-950 border-slate-700 text-indigo-500 focus:ring-indigo-500/60 focus:ring-offset-slate-900">
+            <span><span class="group-hover:text-white transition">They Say / I Say sentence stems</span>
+              <span class="block text-[10.5px] text-slate-500">Embeds usable argumentative frames</span></span>
+          </label>
+          <label class="flex items-start gap-2.5 text-[12px] text-slate-300 cursor-pointer group">
+            <input type="checkbox" id="toggle-vocab" checked class="mt-0.5 rounded bg-slate-950 border-slate-700 text-indigo-500 focus:ring-indigo-500/60 focus:ring-offset-slate-900">
+            <span><span class="group-hover:text-white transition">Tier 2 / Tier 3 inline glossing</span>
+              <span class="block text-[10.5px] text-slate-500">Keeps the target word, adds the scaffold</span></span>
+          </label>
+          <label class="flex items-start gap-2.5 text-[12px] text-slate-300 cursor-pointer group">
+            <input type="checkbox" id="toggle-syntax" class="mt-0.5 rounded bg-slate-950 border-slate-700 text-indigo-500 focus:ring-indigo-500/60 focus:ring-offset-slate-900">
+            <span><span class="group-hover:text-white transition">Syntactic simplification</span>
+              <span class="block text-[10.5px] text-slate-500">Shortens clauses only — never swaps vocabulary</span></span>
+          </label>
+        </div>
+      </div>
+
+      <button id="transform-btn" class="w-full bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-2.5 px-4 rounded-lg transition flex items-center justify-center gap-2 shadow-lg shadow-indigo-950/60">
+        <i data-lucide="wand-sparkles" class="w-4 h-4"></i> Execute Transformation
+      </button>
+      <p class="text-[10.5px] text-slate-500 text-center -mt-1">Demo Mode returns a curated, schema-valid response. Connect an API key for live generation.</p>
+    </div>
+  </section>
+
+  <!-- ─────────── OUTPUT WORKBENCH ─────────── -->
+  <section class="lg:col-span-8 flex flex-col gap-4">
+
+    <div class="bg-slate-900/70 rounded-xl border border-slate-800 overflow-hidden">
+      <!-- tab bar -->
+      <div class="flex items-center justify-between gap-2 border-b border-slate-800 px-3 py-2 flex-wrap">
+        <div class="flex gap-1 flex-wrap" id="tab-bar">
+          <button data-tab="output"   class="tab tab-active text-[12px] font-medium px-3 py-1.5 rounded-md transition flex items-center gap-1.5"><i data-lucide="file-check-2" class="w-3.5 h-3.5"></i> Output</button>
+          <button data-tab="compare"  class="tab text-[12px] font-medium px-3 py-1.5 rounded-md text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition flex items-center gap-1.5"><i data-lucide="columns-2" class="w-3.5 h-3.5"></i> Side-by-Side</button>
+          <button data-tab="diagnostics" class="tab text-[12px] font-medium px-3 py-1.5 rounded-md text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition flex items-center gap-1.5"><i data-lucide="brain-circuit" class="w-3.5 h-3.5"></i> Diagnostics</button>
+          <button data-tab="revisions" class="tab text-[12px] font-medium px-3 py-1.5 rounded-md text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition flex items-center gap-1.5"><i data-lucide="list-checks" class="w-3.5 h-3.5"></i> Revisions</button>
+          <button data-tab="json"     class="tab text-[12px] font-medium px-3 py-1.5 rounded-md text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition flex items-center gap-1.5"><i data-lucide="braces" class="w-3.5 h-3.5"></i> JSON</button>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <button id="copy-btn" class="text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1.5 rounded-md transition flex items-center gap-1.5 border border-slate-700"><i data-lucide="copy" class="w-3.5 h-3.5"></i> Copy</button>
+          <button id="download-btn" class="text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1.5 rounded-md transition flex items-center gap-1.5 border border-slate-700"><i data-lucide="download" class="w-3.5 h-3.5"></i> JSON</button>
+        </div>
+      </div>
+
+      <!-- panels -->
+      <div id="panels" class="p-4 min-h-[560px]">
+        <div id="empty-state" class="h-[520px] flex flex-col items-center justify-center text-center gap-3 text-slate-500">
+          <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800"><i data-lucide="scan-text" class="w-8 h-8 opacity-50"></i></div>
+          <p class="text-sm font-medium text-slate-400">No transformation yet</p>
+          <p class="text-xs max-w-sm">Load a preset or paste your own text, set the matrix on the left, then run the transformation.</p>
+        </div>
+
+        <div id="panel-output" class="hidden fade-in">
+          <div id="summary-strip" class="mb-4 rounded-lg border border-indigo-800/50 bg-indigo-950/30 p-3">
+            <div class="flex items-start gap-2.5">
+              <i data-lucide="sparkles" class="w-4 h-4 text-indigo-400 mt-0.5 shrink-0"></i>
+              <p id="summary-text" class="text-[12.5px] text-indigo-100/90 leading-relaxed"></p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3 mb-3 flex-wrap" id="output-chips"></div>
+          <div id="output-text" class="bg-slate-950 rounded-lg p-4 border border-slate-800 text-slate-100 text-[14px] leading-[1.75] whitespace-pre-wrap scroll-thin max-h-[520px] overflow-y-auto"></div>
+          <p class="text-[10.5px] text-slate-500 mt-2 flex items-center gap-1.5">
+            <i data-lucide="info" class="w-3 h-3"></i>
+            Highlights: <mark class="gloss">glossed term</mark> · <mark class="stem">embedded stem</mark>
+          </p>
+        </div>
+
+        <div id="panel-compare" class="hidden fade-in grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Source</h3>
+              <span id="cmp-src-fk" class="text-[10.5px] text-slate-500 tabular-nums"></span>
+            </div>
+            <div id="compare-source" class="bg-slate-950 rounded-lg p-4 border border-slate-800 text-slate-400 text-[13px] leading-[1.7] whitespace-pre-wrap max-h-[520px] overflow-y-auto scroll-thin"></div>
+          </div>
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="text-[11px] font-semibold uppercase tracking-wider text-emerald-400">Transformed</h3>
+              <span id="cmp-out-fk" class="text-[10.5px] text-slate-500 tabular-nums"></span>
+            </div>
+            <div id="compare-output" class="bg-slate-950 rounded-lg p-4 border border-emerald-900/40 text-slate-100 text-[13px] leading-[1.7] whitespace-pre-wrap max-h-[520px] overflow-y-auto scroll-thin"></div>
+          </div>
+        </div>
+
+        <div id="panel-diagnostics" class="hidden fade-in space-y-4 max-h-[560px] overflow-y-auto scroll-thin pr-1"></div>
+        <div id="panel-revisions" class="hidden fade-in space-y-3 max-h-[560px] overflow-y-auto scroll-thin pr-1"></div>
+
+        <div id="panel-json" class="hidden fade-in">
+          <pre id="json-out" class="bg-slate-950 rounded-lg p-4 border border-slate-800 text-[11.5px] text-slate-300 overflow-auto max-h-[540px] scroll-thin font-mono leading-relaxed"></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="border-t border-slate-800 bg-slate-950 py-4 text-center text-[11px] text-slate-500">
+  <p>Rhetorical Dynamics Studio — translating rhetorical grammar &amp; vocabulary science into production prompt architecture.</p>
+  <p class="mt-1 text-slate-600">Graff &amp; Birkenstein · Kolln · Swales · Sprenger · Sloane · Lakoff &amp; Johnson · Skrabut</p>
+</footer>
+
+<!-- ══════════════════════════ MODAL: API ══════════════════════════ -->
+<div id="api-modal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-sm hidden z-50 items-center justify-center p-4">
+  <div class="bg-slate-900 border border-slate-800 rounded-xl max-w-lg w-full p-6 shadow-2xl max-h-[90vh] overflow-y-auto scroll-thin">
+    <h3 class="text-base font-bold text-white mb-1 flex items-center gap-2"><i data-lucide="plug-zap" class="w-4 h-4 text-indigo-400"></i> Connect a model</h3>
+    <p class="text-[12px] text-slate-400 mb-4">Leave this on Demo Mode to explore without a key. With a key, the app sends the synthesized system prompt and requires a schema-valid JSON response.</p>
+
+    <div class="rounded-lg border border-amber-800/50 bg-amber-950/25 p-3 mb-4 flex gap-2.5">
+      <i data-lucide="shield-alert" class="w-4 h-4 text-amber-400 mt-0.5 shrink-0"></i>
+      <p class="text-[11.5px] text-amber-100/80 leading-relaxed">
+        This is a <strong>client-side demo</strong>. A key entered here is sent from your browser straight to the provider and is held <strong>in memory only</strong> — never written to localStorage, never sent anywhere else. It is still visible to anything running in this page, so use a scoped, disposable key. Production deployments must proxy through a server.
+      </p>
+    </div>
+
+    <div class="space-y-3 mb-5">
+      <div>
+        <label for="api-provider" class="block text-[11px] font-medium text-slate-300 mb-1">Provider</label>
+        <select id="api-provider" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-[13px] text-slate-200">
+          <option value="mock">Demo Mode — curated responses, no key</option>
+          <option value="anthropic">Anthropic — claude-opus-5</option>
+          <option value="openai">OpenAI — gpt-4o</option>
+        </select>
+      </div>
+      <div id="api-key-container" class="hidden space-y-3">
+        <div>
+          <label for="api-key-input" class="block text-[11px] font-medium text-slate-300 mb-1">API Key</label>
+          <input type="password" id="api-key-input" autocomplete="off" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-[13px] text-slate-200 font-mono" placeholder="sk-…">
+        </div>
+        <label id="fallback-row" class="flex items-start gap-2.5 text-[12px] text-slate-300 cursor-pointer">
+          <input type="checkbox" id="toggle-fallback" checked class="mt-0.5 rounded bg-slate-950 border-slate-700 text-indigo-500">
+          <span>Server-side refusal fallback
+            <span class="block text-[10.5px] text-slate-500">If a safety classifier declines the request, Anthropic re-runs it on a fallback model inside the same call.</span></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="flex justify-end gap-2">
+      <button id="close-api" class="px-4 py-2 text-[12px] font-medium bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition">Save &amp; Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════ MODAL: THEORY ══════════════════════════ -->
+<div id="theory-modal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-sm hidden z-50 items-center justify-center p-4">
+  <div class="bg-slate-900 border border-slate-800 rounded-xl max-w-3xl w-full p-6 shadow-2xl max-h-[88vh] overflow-y-auto scroll-thin">
+    <div class="flex justify-between items-start mb-4">
+      <div>
+        <h3 class="text-base font-bold text-white flex items-center gap-2"><i data-lucide="library" class="w-4 h-4 text-indigo-400"></i> Theoretical architecture</h3>
+        <p class="text-[12px] text-slate-400 mt-1">Every constraint the engine applies traces to one of these sources.</p>
+      </div>
+      <button id="close-theory" class="text-slate-500 hover:text-slate-200 transition"><i data-lucide="x" class="w-5 h-5"></i></button>
+    </div>
+    <div id="theory-body" class="space-y-4"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════ APPLICATION ══════════════════════════ -->
+<script>
+/* ===========================================================================
+ * Rhetorical Dynamics Studio
+ * ---------------------------------------------------------------------------
+ * Single-file workbench. Three layers:
+ *   1. PROMPT + SCHEMA — the contract, generated from prompts/*.yaml
+ *   2. ANALYSIS        — real, locally-computed readability metrics
+ *   3. TRANSPORT       — Demo Mode, Anthropic, or OpenAI; identical response shape
+ * =========================================================================== */
+
+/* ---------------------------------------------------------------------------
+ * 1a. SYSTEM PROMPT
+ * Generated from prompts/rhetorical-dynamics-studio.yaml by tools/render_prompt.py.
+ * Do not hand-edit between the markers — edit the YAML and re-run the script.
+ * ------------------------------------------------------------------------- */
+const SYSTEM_PROMPT = /* SYSTEM_PROMPT:BEGIN */ `# RHETORICAL TRANSFORMATION ENGINE
+
+You are a Rhetorical Transformation Engine: a master humanities educator with twenty-five years of ELA classroom practice, cross-trained in applied linguistics, rhetorical grammar, and instructional design. You do not "simplify" or "fancy up" text. You re-engineer its register, stance, and syntactic architecture for a specified audience while preserving every ounce of its conceptual content, and you report exactly what you changed and which theoretical principle licensed each change.
+
+## PRIME DIRECTIVES
+
+These override every other instruction below.
+
+**PD-1 — Conceptual fidelity is non-negotiable.** Never trade conceptual accuracy for accessibility. If a concept cannot be made reachable at the target grade band without becoming false, keep it accurate and say so in conceptual_accessibility_summary. A misleading metaphor is a worse failure than a hard sentence.
+
+**PD-2 — Transform, do not summarize.** Preserve the informational content of the source. Length may change to serve the register - scaffolding for younger readers usually runs longer, not shorter - but no claim, fact, or nuance may silently disappear.
+
+**PD-3 — Every change must be theory-licensed.** Each entry in the diagnostic must trace to a named framework. If you cannot name the principle behind an edit, do not make the edit.
+
+**PD-4 — Clean prose, no scaffolding scars.** transformed_text is publishable classroom prose. Never leave bracketed move labels, framework citations, editorial asides, or markdown headings inside it. The analysis belongs in the diagnostic fields.
+
+**PD-5 — Surface the trade-offs.** You are one half of a human-in-the-loop system. Where you made a judgment call a curriculum specialist might reverse, put it in actionable_revisions so a human can accept or reject it.
+
+## DIMENSION 1 — TARGET GRADE BAND
+
+### elementary_3_5  (schema label: "Elementary")
+- Flesch-Kincaid target: 3.0–5.9
+- Mean sentence length: 8–12 words
+- Lexicon: Tier 1 foundation with explicitly glossed Tier 2 targets. Per Rule 1, keep the Tier 2 word and gloss it; do not swap in a simpler synonym.
+- Syntax: Paratactic. Predominantly simple and lightly compound sentences with clear subject-verb-object order. Subordination is rare and, when used, front-loaded with an explicit connective ("Because X, Y").
+- Cohesion: Maximum. Every sentence opens on a term the previous sentence established.
+- Scaffolding: Concrete, physically grounded analogies; explicit connectives; direct sentence stems.
+- Cognitive demand: Remember/Understand
+- Developmental verbs available: compare, contrast, describe, distinguish, identify, retell, demonstrate, determine, explain, locate, support, develop
+
+### middle_school_6_8  (schema label: "Middle")
+- Flesch-Kincaid target: 6.0–8.9
+- Mean sentence length: 12–17 words
+- Lexicon: Core Tier 2 academic vocabulary held at full strength; Tier 3 domain terms introduced with an appositive gloss on first use.
+- Syntax: Mixed compound and complex sentences. Controlled subordination, one dependent clause at a time. Vary sentence openings so no three consecutive sentences begin with the subject.
+- Cohesion: High. Given-New consistently observed; cause-and-effect connectors made explicit.
+- Scaffolding: Guiding questions, structured argument frames, explicit causal connectors.
+- Cognitive demand: Apply/Analyze
+- Developmental verbs available: infer, integrate, interpret, paraphrase, summarize, analyze, articulate, cite, delineate, evaluate, trace
+
+### high_school_9_10  (schema label: "High School")
+- Flesch-Kincaid target: 9.0–10.9
+- Mean sentence length: 15–22 words
+- Lexicon: Full Tier 2 mastery assumed. Tier 3 vocabulary integrated without apology; glossing becomes contextual rather than parenthetical.
+- Syntax: Hypotactic. Embedded subordination, deliberate clause-length variation, nominalization where it earns abstraction. Compound-complex sentences carry the analytical load.
+- Cohesion: High, with the Given-New contract used to build cumulative argument across paragraphs.
+- Scaffolding: Embedded counter-arguments, analytical transitions, explicit rhetorical framing.
+- Cognitive demand: Evaluate/Create
+- Developmental verbs available: analyze, evaluate, delineate, substantiate, articulate, trace, refute, qualify
+
+### ap_college_11_12  (schema label: "AP/College")
+- Flesch-Kincaid target: 11.0–14.0
+- Mean sentence length: 18–28 words
+- Lexicon: Advanced academic prose. Precise abstract diction, nuanced domain terminology, disciplinary hedging ("appears to suggest", "on this reading").
+- Syntax: Periodic sentences that suspend the main clause for cumulative effect; multi-level embedding; deliberate cadence; parallelism, antithesis, and other schemes deployed knowingly.
+- Cohesion: Sophisticated. Given-New may be strategically violated for emphasis, but only deliberately.
+- Scaffolding: Implicit dialogue with opposing positions; high abstraction; sophisticated moves left unlabeled.
+- Cognitive demand: Evaluate/Create
+- Developmental verbs available: synthesize, problematize, adjudicate, interrogate, contextualize, theorize
+
+## DIMENSION 2 — PRAGMATIC STANCE
+
+### socratic_inquiry
+- Objective: Provoke reasoning rather than deliver conclusions.
+- Rhetorical focus: Aporia, dialectical sequencing, inquiry-driven transitions.
+- Operational rules:
+  - Convert at least half of all declarative assertions into genuine questions that a student could actually answer from the text.
+  - Sequence questions from concrete observation toward abstract inference.
+  - Withhold the conclusion; end on the question that opens the next move of thinking.
+  - Never ask a rhetorical question you immediately answer yourself - that is direct instruction wearing a costume.
+- Signature syntax: What might explain... | If X is true, what follows for Y? | What evidence would change your mind about...?
+
+### direct_instruction
+- Objective: Transmit conceptual knowledge with maximum clarity and minimum ambiguity.
+- Rhetorical focus: Expository clarity, explicit signposting, high informational density.
+- Operational rules:
+  - Lead with the main claim; support afterward. No suspended structures.
+  - Prefer active voice with a visible agent.
+  - Signpost structure explicitly: first, because of this, as a result.
+  - One idea per sentence at Elementary and Middle bands.
+- Signature syntax: The key idea is... | This happens because... | As a result,...
+
+### peer_to_peer
+- Objective: Lower the affective filter so a hesitant reader will engage.
+- Rhetorical focus: Conversational register, inclusive pronouns, approachable analogies.
+- Operational rules:
+  - Use inclusive first-person plural: we, us, let's.
+  - Permit contractions and direct second-person address.
+  - Ground abstractions in a concrete analogy drawn from ordinary experience.
+  - Stay warm without becoming imprecise - PD-1 still governs.
+- Signature syntax: Let's think about... | You've probably noticed that... | Here's the tricky part:
+
+### formal_academic
+- Objective: Project scholarly authority, objectivity, and argumentative rigor.
+- Rhetorical focus: Objective stance, calibrated hedging, precise attribution, syntactic embedding.
+- Operational rules:
+  - Eliminate first-person singular unless the genre licenses it.
+  - Deploy agentless passive and nominalization to background the researcher and foreground the phenomenon.
+  - Hedge claims proportionally to their evidentiary support.
+  - Attribute every borrowed position to a named or characterized source.
+- Signature syntax: The evidence suggests... | It has been argued that... | This analysis indicates...
+
+## THE FIVE RHETORICAL MOVES
+
+### M1 — The They Say Contextualizing Move  [Structural]
+*Source: they_say_i_say*
+
+**Effect.** Establishes authority and relevance by framing the discourse as a timely intervention in a live conversation rather than an isolated monologue.
+
+**Rule.** Before presenting any core claim or thesis, construct a They Say backdrop. Never state an assertion in a vacuum. Summarize a prevailing consensus, a common assumption, or a counter-opinion that makes this response necessary.
+
+**Templates.**
+- \`standard_view\`: Conventional wisdom has it that [COMMON ASSUMPTION]. However, a closer look reveals [YOUR CLAIM].
+- \`ongoing_debate\`: In recent discussions of [TOPIC], a controversial issue has been [ISSUE]. On the one hand, [A] argues [ARG A]. On the other hand, [B] contends [ARG B]. My own view is [YOUR CLAIM].
+- \`implied_view\`: Many assume that [ASSUMPTION], but this overlooks [OVERLOOKED FACTOR].
+
+**Realization by band.**
+- Elementary: A simple two-sentence contrast: 'Many people think ___. But ___.'
+- Middle: Explicit attribution to a named group plus a signposted pivot.
+- High School: Integrated into the opening paragraph; attribution characterized rather than named.
+- AP/College: Woven through the introduction; the conversation is implied by diction rather than announced.
+
+### M2 — Concession-Rebuttal Pivots  [Syntactic and Structural]
+*Source: they_say_i_say*
+
+**Effect.** Shifts the tone of disagreement from combative to academic, signaling fair-mindedness and intellectual nuance - the register marker that most reliably separates sophisticated from novice argument.
+
+**Rule.** Avoid binary yes/no positions. When engaging a counter-argument, adopt a hybrid stance: concede the minor point genuinely, then defend the main claim without retreat. Target stance_type agree_with_difference for grades 9 and above.
+
+**Templates.**
+- \`yes_but\`: Although I agree with [SOURCE] up to a point, I cannot accept the overall conclusion that [COUNTER-CLAIM], because [REASON].
+- \`concede_and_stand\`: Though I concede that [CONCESSION], I still insist that [CORE CLAIM], because [REASON].
+- \`dubious_ground\`: [SOURCE] is right that [VALID POINT], but on more dubious ground in claiming that [WEAK POINT].
+
+**Anti-pattern.** A concession that concedes nothing real ('Some say X, but they are simply wrong') fails the move and should be flagged.
+
+### M3 — Preemptive Naysayer Integration  [Pragmatic and Structural]
+*Source: they_say_i_say*
+
+**Effect.** Projects ethos by demonstrating that the writer has already anticipated, weighed, and answered the major objection before the reader can raise it.
+
+**Rule.** Introduce a specific, named skeptic into the argument - not a vague "some people." Name the group likely to object, state their strongest objection fairly, then answer it.
+
+**Templates.**
+- \`formal\`: Here many [SPECIFIC SKEPTICS] would object that [OBJECTION]. Nevertheless, [EVIDENCE] shows [RESPONSE].
+- \`interrogative\`: But is this realistic? What are the chances it would actually work? One might say 'impossible' - yet [RESPONSE].
+
+**Quality gate.** If skeptic_group_identified would be generic, strengthen it or set is_present to false. Do not fake the move.
+
+### M4 — Agent-Controlling Voice Shifts  [Syntactic]
+*Source: rhetorical_grammar*
+
+**Effect.** Regulates the visibility of human actors. Active voice foregrounds responsibility and produces a vivid, accountable tone; agentless passive and nominalization background agency to construct an objective, scientific register.
+
+**Rule.** Treat voice as a register dial, never as a correctness issue. Passive voice is a deliberate instrument for concealing or backgrounding agency. Select the setting the target stance requires, and justify it in stylistic_appropriateness.
+
+**Voice progression.**
+- \`active_vivid\`: The researchers analyzed the results and discovered a discrepancy.
+- \`passive_objective\`: The results were analyzed, and a discrepancy was discovered.
+- \`nominalized_agentless\`: Analysis of the results yielded the discovery of a discrepancy.
+
+**Stance mapping.**
+- \`direct_instruction\` → active_vivid - accountability and clarity
+- \`peer_to_peer\` → active_vivid - immediacy
+- \`socratic_inquiry\` → active_vivid - the student must see who acts in order to question it
+- \`formal_academic\` → passive_objective to nominalized_agentless - disciplinary detachment
+
+### M5 — The Given-New Cohesion Contract  [Syntactic and Structural]
+*Source: rhetorical_grammar*
+
+**Effect.** Aligns syntax with reader expectation, producing seamless prose rhythm and professional authority. Violating it is the single most common cause of text that is technically correct but feels hard to read.
+
+**Rule.** Every sentence opens on GIVEN information - a term the reader already holds from the prior sentence or from shared context - and closes on the NEW information that is the sentence's focus. That new element becomes the given element the next sentence may open on.
+
+**Worked example.**
+- s1: To test this hypothesis, researchers selected [fifteen research articles](NEW).
+- s2: [Each of these articles](GIVEN) was coded by [two independent raters](NEW).
+- s3: [Those raters](GIVEN) disagreed on [roughly a fifth of the cases](NEW).
+
+**Anti-pattern.** The cohesive break: opening a sentence on a completely un-bridged concept, forcing the reader into an unsupported cognitive leap. Every such break you repair must be logged in repaired_cohesive_breaks.
+
+## VOCABULARY DOCTRINE
+
+**Tier definitions.**
+- tier_1: Everyday, high-frequency words acquired through ordinary conversation. Examples: happy, walk, table.
+- tier_2: High-frequency GENERAL ACADEMIC words that recur across subject areas and carry the load of mature comprehension and assessment. Examples: analyze, delineate, summarize, establish, evaluate.
+- tier_3: Low-frequency, DOMAIN-SPECIFIC technical terms essential to conceptual content in a field. Examples: stoichiometry, photosynthesis, eutrophication, subduction.
+
+### V1 — Maintain the target word, adapt the scaffold - no dilution
+Never replace a Tier 2 or Tier 3 target term with a simpler synonym. Swapping "contrast" for "find differences" denies the student the high-stakes terminology they will meet on assessment. Keep the word; adapt the DEFINITION's complexity to the band.
+
+**Example.**
+- elementary: stanza - a fancy poetry word for a paragraph
+- high_school: stanza - a structural unit defined by its rhyme scheme and metrical pattern
+
+**Enforcement.** Every retained term goes in preserved_target_terms with its access_strategy.
+
+### V2 — Follow the developmental progression of cognitive demand
+Introduce academic verbs on Sprenger's grade-band schedule. Do not use a verb whose cognitive operation the band has not yet been taught.
+
+**Introduction schedule.**
+- K: compare, contrast, describe, distinguish, identify, retell
+- grade_1: demonstrate, determine, draw, explain, locate, support
+- grade_2: comprehend, develop
+- grade_4: infer, integrate, interpret, paraphrase, summarize
+- grade_5: analyze
+- grade_6: articulate, cite, delineate, evaluate, trace
+- grade_11: synthesize
+
+### V3 — Use the recoding loop - formal, informal, formal
+Permit an informal personal translation as a temporary cognitive bridge, never as a replacement. The lesson must loop back to the formal term so it consolidates in long-term memory.
+
+**Example.**
+- term: interpret
+- elementary_bridge: decoding a secret message
+- high_school_bridge: a formal concept map linking interpretation to translation and text evidence
+
+**Enforcement.** Log each bridge in recoding_opportunities, with the loop-back stated in pedagogical_rationale.
+
+### V4 — Leverage dual-prompting audience constraints
+When rendering an abstract term for a band, constrain BOTH the target age and the concrete context. For younger readers use physically grounded metaphors; for older readers introduce abstract classifications anchored to concrete instances.
+
+**Example.**
+- age_7: AI is like the rules a computer follows when you play a game on a phone.
+- age_16: Weak AI performs narrow tasks - a virtual assistant; strong AI would generalize across domains - a fully autonomous vehicle.
+
+### V5 — Align vocabulary tasks with Bloom and Webb
+Adapting vocabulary means changing what the reader DOES with the word, not merely how it is defined. Set cognitive_demand_level to match.
+
+**Task scaling.**
+- elementary: Remember/Understand - identify a metaphor in a song lyric.
+- middle: Apply/Analyze - analyze word choice to determine tone and mood.
+- high_school_ap: Evaluate/Create - evaluate an author's argument by assessing evidence; synthesize multiple sources into an original thesis.
+
+### V6 — Always validate - the quality gate
+Simplifying Tier 3 terms for younger readers risks metaphors that are vivid but false. Before emitting any analogy, test it: does it preserve the physical, mathematical, or historical mechanics of the concept? If the metaphor obscures the reality, reject and rebuild it. When no safe analogy exists, keep the technical formulation and say so in conceptual_accessibility_summary.
+
+## SCAFFOLDING TOGGLES
+
+The client supplies these as booleans. Honor them exactly.
+
+### sentence_stems  (\`toggle_stems\`)
+- When true: Embed usable They Say / I Say stems drawn from rhetorical_moves. At Elementary and Middle they may appear as an explicit closing frame the student completes; at High School and AP they must be realized INSIDE the prose as finished sentences, never as a worksheet. Record every stem verbatim in sentence_stems_added.
+- When false: Leave sentence_stems_added as an empty array.
+
+### vocabulary_glossing  (\`toggle_vocab\`)
+- When true: Gloss Tier 2 and Tier 3 terms inline on first use, honoring Rule V1 - the term stays, the gloss arrives beside it. Elementary and Middle take a parenthetical or appositive gloss; High School and AP take a contextual gloss that never interrupts the sentence's cadence. Record each in glossed_terms.
+- When false: Leave glossed_terms empty; still populate tier counts and preserved_target_terms.
+
+### syntactic_simplification  (\`toggle_syntax\`)
+- When true: Reduce mean clause length toward the low end of the band's mean_sentence_length_words. Decompose multi-clause sentences, convert nominalizations back to verbs, and raise the active voice ratio. This toggle governs SYNTAX ONLY - it must never trigger vocabulary substitution, which V1 forbids.
+- When false: Use the band's full syntactic range.
+
+## EXECUTION PROTOCOL
+
+**Input payload.**
+- source_text: the raw text to transform
+- target_grade_band: one of the grade_bands keys
+- pragmatic_stance: one of the pragmatic_stances keys
+- toggles: { toggle_stems, toggle_vocab, toggle_syntax } as booleans
+
+**Work in this order.**
+1. DIAGNOSE the source. Estimate its current band, sentence-type distribution, voice ratio, and tier counts before changing anything.
+2. INVENTORY conceptual content. List every claim, fact, and nuance that must survive under PD-2.
+3. SELECT moves. Choose which of M1-M5 the target stance and band require. Not every text needs all five - forcing a naysayer into a two-sentence definition is a failure, not a flourish.
+4. REBUILD syntax to the band's complexity profile and the stance's voice setting.
+5. APPLY vocabulary doctrine. Preserve targets (V1), gloss per toggle, build recoding bridges (V3), and run the V6 validation gate on every analogy.
+6. VERIFY the Given-New contract sentence by sentence (M5). Repair breaks and log them.
+7. MEASURE. Compute Flesch-Kincaid for source and transformed text. If the transformed value falls outside the band's target_fk_range, revise and re-measure before emitting.
+8. REPORT. Emit the diagnostic, populating every required field with substantive content.
+
+**Self-check before emitting.**
+- Does transformed_text contain any bracketed labels, framework names, or editorial asides? If yes, strip them (PD-4).
+- Did any claim from the step-2 inventory vanish? If yes, restore it (PD-2).
+- Is transformed_flesch_kincaid_grade_level inside the target band's range? If no, revise.
+- Was any Tier 2/3 target replaced with a simpler synonym? If yes, restore the term and gloss it instead (V1).
+- Does every analogy survive the V6 validation gate?
+- Is every diagnostic array populated with real findings rather than placeholders? Empty is acceptable only when genuinely absent.
+
+## OUTPUT CONTRACT
+
+Format: JSON only. Strict schema conformance is required.
+
+- Emit a single JSON object conforming exactly to the schema. No prose before or after. No markdown code fences.
+- Every required field must be present. Arrays may be empty only when the phenomenon is genuinely absent from the text.
+- All *_text_segment and text_segment values must be VERBATIM spans, quoted exactly as they appear.
+- Numeric ratios are decimals between 0.0 and 1.0. active_voice_ratio and passive_voice_ratio must sum to approximately 1.0.
+
+## EDGE CASES
+
+- **empty_or_trivial_input**: If source_text is under roughly fifteen words, transform it anyway but set the diagnostic arrays that genuinely do not apply to empty, and say so in transformation_summary rather than inventing findings.
+- **already_at_target**: If the source already sits in the target band and stance, make only the changes that genuinely improve it and state plainly in transformation_summary that the source was already well-calibrated. Do not manufacture churn to look busy.
+- **non_prose_input**: For lists, tables, or code, transform the prose elements and preserve the structure. Note the structural constraint in structural_changes.
+
+## SOURCE FRAMEWORKS
+
+- **Graff, G. & Birkenstein, C. - They Say / I Say: The Moves That Matter in Academic Writing** — Moves-based composition, stance insertion, naysayer integration, concession-rebuttal templates
+- **Kolln, M. - Rhetorical Grammar: Grammatical Choices, Rhetorical Effects** — Voice and agency control, sentence-type variety, the Given-New cohesion contract
+- **Swales, J. - Genre Analysis: English in Academic and Research Settings** — CARS structural moves, discourse-community awareness
+- **Sprenger, M. - Teaching the Critical Vocabulary of the Common Core (after Beck & McKeown)** — Tier 1/2/3 classification, developmental verb progression, the recoding loop
+- **Sloane, T. O. (ed.) - Encyclopedia of Rhetoric** — Aristotelian proofs, stasis theory, tropes and schemes
+- **Lakoff, G. & Johnson, M. - Metaphors We Live By** — Conceptual framing, structural metaphor selection for analogies
+- **Skrabut, S. - 80 Ways to Use ChatGPT in the Classroom** — Dual-prompting audience constraints, human-in-the-loop validation gates
+` /* SYSTEM_PROMPT:END */;
+
+/* ---------------------------------------------------------------------------
+ * 1b. RESPONSE SCHEMA
+ * Mirror of schema/rhetorical-transformation.schema.json, strict-mode:
+ * every object sets additionalProperties:false and lists all keys in required,
+ * so one document satisfies both Anthropic output_config.format and OpenAI
+ * response_format json_schema with strict:true.
+ * ------------------------------------------------------------------------- */
+const RESPONSE_SCHEMA = /* SCHEMA:BEGIN */ {
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://kaminczak.github.io/rhetorical-dynamics-studio/schema/rhetorical-transformation.schema.json",
+  "title": "RhetoricalTransformationResponse",
+  "description": "The complete response contract for the Rhetorical Dynamics Studio transformation engine. Returns the transformed text alongside a full diagnostic breakdown grounded in Graff & Birkenstein (moves), Kolln (rhetorical grammar), Swales (genre moves), and Beck/McKeown/Sprenger (vocabulary tiering). Written in strict mode: every object declares additionalProperties:false and lists every property in required, so the same document works as an Anthropic output_config.format schema and an OpenAI response_format json_schema with strict:true.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "transformed_text",
+    "transformation_summary",
+    "readability_analysis",
+    "rhetorical_stance_evaluation",
+    "syntax_and_sentence_variety",
+    "vocabulary_analysis",
+    "scaffolding_applied",
+    "actionable_revisions"
+  ],
+  "properties": {
+    "transformed_text": {
+      "type": "string",
+      "description": "The complete rewritten text, fully realized in the target grade band, pragmatic stance, and enabled scaffolding toggles. Prose only, no meta-commentary, no bracketed move labels, no headings unless the source had them."
+    },
+    "transformation_summary": {
+      "type": "string",
+      "description": "Two to three sentences, addressed to a teacher or curriculum designer, naming the highest-leverage changes made and the rhetorical reason for each."
+    },
+    "readability_analysis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "current_grade_band",
+        "target_grade_band",
+        "source_flesch_kincaid_grade_level",
+        "transformed_flesch_kincaid_grade_level",
+        "mean_sentence_length_words",
+        "conceptual_accessibility_summary"
+      ],
+      "properties": {
+        "current_grade_band": {
+          "type": "string",
+          "enum": [
+            "Elementary",
+            "Middle",
+            "High School",
+            "AP/College",
+            "Professional"
+          ],
+          "description": "Estimated educational grade band of the SOURCE text."
+        },
+        "target_grade_band": {
+          "type": "string",
+          "enum": [
+            "Elementary",
+            "Middle",
+            "High School",
+            "AP/College",
+            "Professional"
+          ],
+          "description": "The requested target audience grade band."
+        },
+        "source_flesch_kincaid_grade_level": {
+          "type": "number",
+          "description": "Flesch-Kincaid Grade Level of the source text: 0.39*(words/sentences) + 11.8*(syllables/words) - 15.59."
+        },
+        "transformed_flesch_kincaid_grade_level": {
+          "type": "number",
+          "description": "Flesch-Kincaid Grade Level of the transformed text, computed the same way."
+        },
+        "mean_sentence_length_words": {
+          "type": "number",
+          "description": "Average sentence length of the transformed text, in words."
+        },
+        "conceptual_accessibility_summary": {
+          "type": "string",
+          "description": "Qualitative judgment of whether complex concepts were scaffolded for the target band WITHOUT dilution. Must explicitly state whether any conceptual precision was traded away, and if so, what."
+        }
+      }
+    },
+    "rhetorical_stance_evaluation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "they_say_context",
+        "stance_type",
+        "naysayer_integration",
+        "concession_rebuttal_pivots",
+        "genre_moves"
+      ],
+      "properties": {
+        "they_say_context": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "is_established",
+            "summary_of_context",
+            "strength_assessment"
+          ],
+          "properties": {
+            "is_established": {
+              "type": "boolean",
+              "description": "True if the TRANSFORMED text frames its claim inside an existing conversation or counter-view before asserting a thesis (Graff & Birkenstein)."
+            },
+            "summary_of_context": {
+              "type": "string",
+              "description": "The consensus, common assumption, or counter-view the text now answers."
+            },
+            "strength_assessment": {
+              "type": "string",
+              "description": "How effectively that backdrop motivates and justifies the intervention, the so-what test."
+            }
+          }
+        },
+        "stance_type": {
+          "type": "string",
+          "enum": [
+            "agree",
+            "disagree",
+            "agree_with_difference",
+            "undecided"
+          ],
+          "description": "Primary rhetorical positioning relative to the They Say. Prefer agree_with_difference for grades 9+, since binary positions read as unsophisticated."
+        },
+        "naysayer_integration": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "is_present",
+            "skeptic_group_identified",
+            "objection_handling_critique"
+          ],
+          "properties": {
+            "is_present": {
+              "type": "boolean"
+            },
+            "skeptic_group_identified": {
+              "type": "string",
+              "description": "The named group or perspective of skeptics, e.g. colonial loyalists, traditionalists. Use 'none' when absent. Naming a specific group beats a generic 'some may say'."
+            },
+            "objection_handling_critique": {
+              "type": "string",
+              "description": "How successfully the text dismantles or answers the skeptic."
+            }
+          }
+        },
+        "concession_rebuttal_pivots": {
+          "type": "array",
+          "description": "Points of nuanced qualification: agreement-with-a-difference, concede-and-stand-ground, dubious-ground.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "concession_text",
+              "rebuttal_text",
+              "template_alignment"
+            ],
+            "properties": {
+              "concession_text": {
+                "type": "string",
+                "description": "The verbatim span conceding a minor point or validating the counter-argument."
+              },
+              "rebuttal_text": {
+                "type": "string",
+                "description": "The verbatim span pivoting back to defend the primary claim."
+              },
+              "template_alignment": {
+                "type": "string",
+                "description": "Which template this realizes, e.g. Yes-but, Though I concede X I still insist Y, or right-about-X-but-dubious-about-Y."
+              }
+            }
+          }
+        },
+        "genre_moves": {
+          "type": "array",
+          "description": "Structural CARS moves (Swales, Genre Analysis) identified in the transformed text.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "move_name",
+              "text_segment",
+              "rhetorical_purpose"
+            ],
+            "properties": {
+              "move_name": {
+                "type": "string",
+                "description": "e.g. Move 1: Establishing a territory; Move 2: Establishing a niche; Move 3: Occupying the niche."
+              },
+              "text_segment": {
+                "type": "string",
+                "description": "The verbatim excerpt realizing this move."
+              },
+              "rhetorical_purpose": {
+                "type": "string",
+                "description": "How the move advances the communicative purpose for this discourse community."
+              }
+            }
+          }
+        }
+      }
+    },
+    "syntax_and_sentence_variety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sentence_type_distribution",
+        "voice_analysis",
+        "cohesion_evaluation"
+      ],
+      "properties": {
+        "sentence_type_distribution": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "simple_count",
+            "compound_count",
+            "complex_count",
+            "compound_complex_count",
+            "variety_critique"
+          ],
+          "properties": {
+            "simple_count": {
+              "type": "integer",
+              "description": "Sentences in the TRANSFORMED text with one independent clause."
+            },
+            "compound_count": {
+              "type": "integer",
+              "description": "Two or more independent clauses, no subordinate clause."
+            },
+            "complex_count": {
+              "type": "integer",
+              "description": "One independent clause plus one or more subordinate clauses."
+            },
+            "compound_complex_count": {
+              "type": "integer",
+              "description": "Two or more independent clauses plus at least one subordinate clause."
+            },
+            "variety_critique": {
+              "type": "string",
+              "description": "Critique of rhythm, length variation, and stylistic effect (Kolln). Note deliberate short sentences used for emphasis."
+            }
+          }
+        },
+        "voice_analysis": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "active_voice_ratio",
+            "passive_voice_ratio",
+            "nominalization_density",
+            "stylistic_appropriateness"
+          ],
+          "properties": {
+            "active_voice_ratio": {
+              "type": "number",
+              "description": "Proportion of active-voice clauses, 0.0 to 1.0."
+            },
+            "passive_voice_ratio": {
+              "type": "number",
+              "description": "Proportion of passive-voice clauses, 0.0 to 1.0. Should sum to about 1.0 with active_voice_ratio."
+            },
+            "nominalization_density": {
+              "type": "string",
+              "enum": [
+                "low",
+                "moderate",
+                "high"
+              ],
+              "description": "How often verbs became nouns (analysis for analyze), which abstracts away agency."
+            },
+            "stylistic_appropriateness": {
+              "type": "string",
+              "description": "Whether voice shifts are STRATEGIC: agentless passive to construct scientific objectivity, active to assign accountability, rather than accidental."
+            }
+          }
+        },
+        "cohesion_evaluation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "given_new_alignment",
+            "cohesive_ties_critique",
+            "repaired_cohesive_breaks"
+          ],
+          "properties": {
+            "given_new_alignment": {
+              "type": "string",
+              "enum": [
+                "consistent",
+                "inconsistent",
+                "failing"
+              ],
+              "description": "Adherence to the Given-New contract: sentences open with established information and close on the new focal element."
+            },
+            "cohesive_ties_critique": {
+              "type": "string",
+              "description": "Analysis of transitions, key-term repetition, and structural links between sentences and paragraphs."
+            },
+            "repaired_cohesive_breaks": {
+              "type": "array",
+              "description": "Places where the source forced an un-bridged cognitive leap and the transformation supplied the missing bridge.",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "vocabulary_analysis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tier_counts",
+        "tier_2_words_identified",
+        "tier_3_words_identified",
+        "recoding_opportunities",
+        "preserved_target_terms"
+      ],
+      "properties": {
+        "tier_counts": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "tier_1",
+            "tier_2",
+            "tier_3"
+          ],
+          "properties": {
+            "tier_1": {
+              "type": "integer",
+              "description": "Everyday basic vocabulary."
+            },
+            "tier_2": {
+              "type": "integer",
+              "description": "High-frequency general academic vocabulary: analyze, delineate, evaluate."
+            },
+            "tier_3": {
+              "type": "integer",
+              "description": "Low-frequency domain-specific terms: stoichiometry, eutrophication."
+            }
+          }
+        },
+        "tier_2_words_identified": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Key Tier 2 academic words present in the transformed text."
+        },
+        "tier_3_words_identified": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Key Tier 3 specialized terms present in the transformed text."
+        },
+        "recoding_opportunities": {
+          "type": "array",
+          "description": "Sprenger recoding loop: temporary student-friendly bridges that make a term graspable WITHOUT replacing it.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "academic_term",
+              "suggested_informal_bridge",
+              "pedagogical_rationale"
+            ],
+            "properties": {
+              "academic_term": {
+                "type": "string",
+                "description": "The Tier 2 or Tier 3 term retained in the text."
+              },
+              "suggested_informal_bridge": {
+                "type": "string",
+                "description": "A student-friendly metaphor or paraphrase: the temporary bridge, not a substitute."
+              },
+              "pedagogical_rationale": {
+                "type": "string",
+                "description": "Why this bridge preserves rigor while lowering cognitive load, and how instruction loops back to the formal term."
+              }
+            }
+          }
+        },
+        "preserved_target_terms": {
+          "type": "array",
+          "description": "Tier 2/3 terms deliberately KEPT rather than simplified away, honoring the no-dilution rule. Each entry pairs the term with how it was made accessible.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "term",
+              "tier",
+              "access_strategy"
+            ],
+            "properties": {
+              "term": {
+                "type": "string"
+              },
+              "tier": {
+                "type": "string",
+                "enum": [
+                  "Tier 2",
+                  "Tier 3"
+                ]
+              },
+              "access_strategy": {
+                "type": "string",
+                "description": "How the term was made reachable: appositive gloss, contextual definition, concrete analogy, or morphological cue."
+              }
+            }
+          }
+        }
+      }
+    },
+    "scaffolding_applied": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sentence_stems_added",
+        "glossed_terms",
+        "structural_changes",
+        "cognitive_demand_level"
+      ],
+      "properties": {
+        "sentence_stems_added": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Verbatim They Say / I Say stems embedded for student use. Empty array if the toggle was off."
+        },
+        "glossed_terms": {
+          "type": "array",
+          "description": "Terms given an inline gloss in the transformed text.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "term",
+              "gloss"
+            ],
+            "properties": {
+              "term": {
+                "type": "string"
+              },
+              "gloss": {
+                "type": "string",
+                "description": "The inline definition as it appears in the transformed text."
+              }
+            }
+          }
+        },
+        "structural_changes": {
+          "type": "string",
+          "description": "Paragraph-level reorganization: what moved, what was split or merged, and why."
+        },
+        "cognitive_demand_level": {
+          "type": "string",
+          "enum": [
+            "Remember/Understand",
+            "Apply/Analyze",
+            "Evaluate/Create"
+          ],
+          "description": "The Bloom/Webb band the transformed text now asks of the reader. Must match the target grade band expected demand."
+        }
+      }
+    },
+    "actionable_revisions": {
+      "type": "array",
+      "description": "Specific, teachable further revisions the human reviewer may accept or reject. This is the human-in-the-loop quality gate: surface trade-offs rather than hiding them.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "original_text_segment",
+          "proposed_text_segment",
+          "focus_area",
+          "theoretical_framework",
+          "concise_rationale"
+        ],
+        "properties": {
+          "original_text_segment": {
+            "type": "string",
+            "description": "The verbatim segment slated for modification."
+          },
+          "proposed_text_segment": {
+            "type": "string",
+            "description": "The rewritten, rhetorically transformed version."
+          },
+          "focus_area": {
+            "type": "string",
+            "enum": [
+              "Readability",
+              "Rhetorical Stance",
+              "Syntax/Sentence Variety",
+              "Vocabulary Tiering",
+              "Agency/Voice"
+            ]
+          },
+          "theoretical_framework": {
+            "type": "string",
+            "enum": [
+              "They Say / I Say",
+              "Rhetorical Grammar",
+              "Genre Analysis (Swales)",
+              "Common Core Critical Vocabulary",
+              "Metaphors We Live By"
+            ]
+          },
+          "concise_rationale": {
+            "type": "string",
+            "description": "One crisp sentence linking the syntactic or structural edit to its effect on tone, register, or authority."
+          }
+        }
+      }
+    }
+  }
+} /* SCHEMA:END */;
+
+/* ---------------------------------------------------------------------------
+ * 2. LOCAL READABILITY ANALYSIS
+ * Computed in-browser so the source panel shows a real number before any
+ * model is called, and so Demo Mode reports measured — not invented — metrics.
+ * ------------------------------------------------------------------------- */
+const Text = {
+  sentences(t) {
+    return (t.match(/[^.!?]+[.!?]+(\s|$)|[^.!?]+$/g) || []).filter(s => s.trim().length > 1);
+  },
+  words(t) {
+    return (t.match(/[A-Za-z0-9']+/g) || []);
+  },
+  syllables(word) {
+    // Heuristic syllable count: adequate for Flesch-Kincaid, not for phonology.
+    const w = word.toLowerCase().replace(/[^a-z]/g, '');
+    if (!w) return 0;
+    if (w.length <= 3) return 1;
+    let s = w.replace(/(?:[^laeiouy]es|ed|[^laeiouy]e)$/, '').replace(/^y/, '');
+    const groups = s.match(/[aeiouy]{1,2}/g);
+    return Math.max(1, groups ? groups.length : 1);
+  },
+  fleschKincaid(t) {
+    const sents = this.sentences(t), words = this.words(t);
+    if (!sents.length || !words.length) return null;
+    const syl = words.reduce((n, w) => n + this.syllables(w), 0);
+    return 0.39 * (words.length / sents.length) + 11.8 * (syl / words.length) - 15.59;
+  },
+  stats(t) {
+    const sents = this.sentences(t), words = this.words(t);
+    return {
+      words: words.length,
+      sentences: sents.length,
+      fk: this.fleschKincaid(t),
+      meanSentenceLength: sents.length ? words.length / sents.length : 0
+    };
+  }
+};
+
+const round1 = n => (n === null || n === undefined || isNaN(n)) ? null : Math.round(n * 10) / 10;
+
+/* ---------------------------------------------------------------------------
+ * 3. MATRIX METADATA — mirrors the YAML, drives hints and validation
+ * ------------------------------------------------------------------------- */
+const BANDS = {
+  elementary_3_5:   { label: 'Elementary', fk: [3.0, 5.9],  msl: [8, 12],  hint: 'Paratactic clauses, maximum cohesion, concrete analogies. Tier 2 words stay — they get glossed, not swapped.' },
+  middle_school_6_8:{ label: 'Middle',     fk: [6.0, 8.9],  msl: [12, 17], hint: 'Controlled subordination, one dependent clause at a time, explicit causal connectors.' },
+  high_school_9_10: { label: 'High School',fk: [9.0, 10.9], msl: [15, 22], hint: 'Hypotactic embedding, deliberate clause-length variation, counter-argument built in.' },
+  ap_college_11_12: { label: 'AP/College', fk: [11.0, 14.0],msl: [18, 28], hint: 'Periodic sentences, nominalization that earns its abstraction, moves left unlabeled.' }
+};
+const STANCES = {
+  socratic_inquiry:  { label: 'Socratic / Inquiry',  hint: 'Assertions become answerable questions, sequenced concrete → abstract. The conclusion is withheld.' },
+  direct_instruction:{ label: 'Direct Instruction',  hint: 'Claim first, support after. Active voice with a visible agent. Structure signposted explicitly.' },
+  peer_to_peer:      { label: 'Peer-to-Peer',        hint: 'Inclusive "we", contractions, everyday analogies — warm without losing precision.' },
+  formal_academic:   { label: 'Formal Academic',     hint: 'Agentless passive and nominalization background the researcher; claims hedged to their evidence.' }
+};
+
+const FRAMEWORKS = [
+  { name: 'They Say / I Say', authors: 'Gerald Graff & Cathy Birkenstein', color: 'indigo',
+    contributes: 'Moves-based composition. Supplies the "They Say" contextualizing move, concession-rebuttal pivots, and preemptive naysayer integration.',
+    operational: 'Before any thesis, the engine constructs a backdrop of prevailing opinion. For grades 9+, it targets agree_with_difference rather than a binary stance — the register marker that most reliably separates sophisticated from novice argument.' },
+  { name: 'Rhetorical Grammar', authors: 'Martha Kolln', color: 'emerald',
+    contributes: 'Voice as a register dial and the Given-New cohesion contract.',
+    operational: 'Passive voice is treated as a deliberate instrument for backgrounding agency, never as an error. Every sentence must open on given information and close on new — and each repaired cohesive break is logged.' },
+  { name: 'Genre Analysis', authors: 'John Swales', color: 'sky',
+    contributes: 'CARS structural moves and discourse-community awareness.',
+    operational: 'Academic and professional transformations are checked against Establishing a Territory → Establishing a Niche → Occupying the Niche.' },
+  { name: 'Teaching the Critical Vocabulary of the Common Core', authors: 'Marilee Sprenger (after Beck & McKeown)', color: 'amber',
+    contributes: 'Tier 1/2/3 classification, the developmental verb schedule, and the recoding loop.',
+    operational: 'The no-dilution rule governs: a Tier 2 target is never replaced by a simpler synonym. "Contrast" stays "contrast" and gains a scaffold. Informal bridges are temporary and must loop back to the formal term.' },
+  { name: 'Encyclopedia of Rhetoric', authors: 'Thomas O. Sloane (ed.)', color: 'violet',
+    contributes: 'Aristotelian proofs, stasis theory, tropes and schemes.',
+    operational: 'Supplies the scheme inventory — parallelism, antithesis, periodic suspension — the AP/College band draws on for cadence.' },
+  { name: 'Metaphors We Live By', authors: 'George Lakoff & Mark Johnson', color: 'rose',
+    contributes: 'Conceptual framing and structural metaphor selection.',
+    operational: 'Governs analogy choice when a Tier 3 term is rendered for a younger band, and grounds the validation gate that rejects vivid-but-false metaphors.' },
+  { name: '80 Ways to Use ChatGPT in the Classroom', authors: 'Stan Skrabut', color: 'teal',
+    contributes: 'Dual-prompting audience constraints and human-in-the-loop validation.',
+    operational: 'Every request constrains both target age and concrete context. Judgment calls a curriculum specialist might reverse are surfaced as actionable revisions rather than silently applied.' }
+];
+
+/* ---------------------------------------------------------------------------
+ * 4. DEMO CORPUS — presets and curated, schema-valid responses
+ * ------------------------------------------------------------------------- */
+const PRESETS = {
+  history_8th: {
+    grade: 'middle_school_6_8', stance: 'direct_instruction',
+    toggles: { stems: true, vocab: true, syntax: false },
+    text: "The Stamp Act of 1765 was imposed by the British Parliament on the American colonies. It mandated that many printed materials in the colonies be produced on stamped paper produced in London, carrying an embossed revenue stamp. Colonial opposition was widespread and led to early forms of organized resistance."
+  },
+  science_ap: {
+    grade: 'ap_college_11_12', stance: 'formal_academic',
+    toggles: { stems: false, vocab: true, syntax: false },
+    text: "Eutrophication occurs when a body of water becomes overly enriched with minerals and nutrients, inducing excessive growth of algae. This process may result in oxygen depletion of the body of water once the algal bloom decomposes."
+  },
+  ela_ell: {
+    grade: 'elementary_3_5', stance: 'socratic_inquiry',
+    toggles: { stems: true, vocab: true, syntax: true },
+    text: "Scrooge is mean at the start of the story. He hates Christmas and won't give money to help poor people. Later, three ghosts visit him and show him his past, present, and future."
+  }
+};
+
+const DEMO_RESPONSES = {
+  history_8th: {
+    transformed_text:
+"Most people remember the Stamp Act of 1765 as a simple tax on paper. That description is accurate, but it misses why colonists reacted so fiercely.\n\nIn 1765, the British Parliament passed a law requiring that many printed materials in the colonies — newspapers, wills, contracts, even playing cards — be produced on special stamped paper made in London and marked with an embossed revenue stamp. Parliament defended the tax as a fair way to recover the enormous cost of defending the colonies during the French and Indian War.\n\nColonists rejected that reasoning. Because they elected no members to Parliament, they argued that Parliament had no authority to tax them at all. The dispute was therefore not really about the price of paper; it was about who held the power to tax.\n\nThat argument spread quickly. Merchants organized boycotts, printers refused the stamped paper, and colonists formed the Sons of Liberty. As a result, the Stamp Act produced something far more consequential than revenue: the first organized, intercolonial resistance to British rule.\n\nWhen you write about this period, you can build your own claim on that same structure: \"Parliament argued that ______, but colonists countered that ______, because ______.\"",
+    transformation_summary: "The source stated the Stamp Act's provisions but never staged the disagreement that made it historically significant. I added a They Say backdrop naming Parliament's actual justification, converted three agentless passive constructions into active clauses with visible historical agents, and repaired a cohesive break where 'colonial opposition' arrived with no bridge from the preceding sentence.",
+    readability_analysis: {
+      current_grade_band: "High School", target_grade_band: "Middle",
+      source_flesch_kincaid_grade_level: 13.9, transformed_flesch_kincaid_grade_level: 8.4,
+      mean_sentence_length_words: 16.2,
+      conceptual_accessibility_summary: "Every substantive concept survived intact: the embossed revenue stamp, the scope of covered documents, Parliament's war-debt justification, and the no-taxation-without-representation principle. Nothing was diluted. The text is longer than the source because the causal chain — war debt → tax → representation dispute → organized resistance — was previously compressed into the single unexplained phrase 'led to'."
+    },
+    rhetorical_stance_evaluation: {
+      they_say_context: {
+        is_established: true,
+        summary_of_context: "The common classroom reading that the Stamp Act was 'a tax on paper' — accurate in substance but insufficient as an explanation of the colonial reaction.",
+        strength_assessment: "Strong. The backdrop is a belief eighth-graders genuinely hold, so the correction lands as a real revision of their thinking rather than a rhetorical formality. It also earns the 'so what' by making the essay's purpose clear in the first two sentences."
+      },
+      stance_type: "agree_with_difference",
+      naysayer_integration: {
+        is_present: true,
+        skeptic_group_identified: "the British Parliament and its colonial defenders",
+        objection_handling_critique: "Parliament's position is stated at its strongest — the war debt was real and enormous — before the colonial counter-argument answers it on constitutional rather than financial grounds. That ordering models fair-minded argument: the objection is answered, not caricatured."
+      },
+      concession_rebuttal_pivots: [{
+        concession_text: "That description is accurate,",
+        rebuttal_text: "but it misses why colonists reacted so fiercely.",
+        template_alignment: "Yes, but — a genuine concession (the description IS accurate) followed by a pivot to insufficiency rather than error."
+      }],
+      genre_moves: [
+        { move_name: "Move 1: Establishing a territory", text_segment: "Most people remember the Stamp Act of 1765 as a simple tax on paper.", rhetorical_purpose: "Anchors the discussion in shared prior knowledge, giving every reader a foothold before any new claim arrives." },
+        { move_name: "Move 2: Establishing a niche", text_segment: "That description is accurate, but it misses why colonists reacted so fiercely.", rhetorical_purpose: "Names the gap — explanation, not fact — that the rest of the passage exists to fill." },
+        { move_name: "Move 3: Occupying the niche", text_segment: "The dispute was therefore not really about the price of paper; it was about who held the power to tax.", rhetorical_purpose: "Delivers the interpretive claim the gap demanded, stated as a corrective antithesis." }
+      ]
+    },
+    syntax_and_sentence_variety: {
+      sentence_type_distribution: { simple_count: 4, compound_count: 3, complex_count: 5, compound_complex_count: 2, variety_critique: "Fourteen sentences ranging from 9 to 34 words. The two shortest — 'Colonists rejected that reasoning.' and 'That argument spread quickly.' — are deliberately blunt, placed at paragraph openings to reset the rhythm after longer explanatory sentences. Complex sentences carry the causal reasoning; simple sentences carry the turns." },
+      voice_analysis: { active_voice_ratio: 0.79, passive_voice_ratio: 0.21, nominalization_density: "low",
+        stylistic_appropriateness: "Direct instruction demands visible agents, so 'was imposed by the British Parliament' became 'the British Parliament passed a law' — the actor now occupies the subject position where a middle-schooler will actually find it. The two passives that remain ('be produced on special stamped paper', 'was therefore not really about') are appropriate: the first genuinely has no relevant agent, the second is a linking construction, not an evasion." },
+      cohesion_evaluation: { given_new_alignment: "consistent",
+        cohesive_ties_critique: "Each paragraph opens on a term the previous paragraph closed with: 'stamped paper' → 'that reasoning' → 'That argument'. Causal connectives are explicit throughout — 'Because', 'therefore', 'As a result' — which the Middle band requires rather than merely permits.",
+        repaired_cohesive_breaks: [
+          "The source jumped from the mechanics of stamped paper directly to 'Colonial opposition was widespread' with no bridge explaining what colonists objected to. The revision inserts Parliament's justification and the representation argument, so opposition arrives as a consequence rather than an assertion.",
+          "The source's 'led to early forms of organized resistance' named an effect with no mechanism. The revision supplies the concrete intermediate steps — boycotts, printer refusals, the Sons of Liberty — before naming the outcome."
+        ] }
+    },
+    vocabulary_analysis: {
+      tier_counts: { tier_1: 148, tier_2: 14, tier_3: 6 },
+      tier_2_words_identified: ["authority", "consequential", "justification", "organized", "defended", "rejected", "produced"],
+      tier_3_words_identified: ["Stamp Act", "revenue stamp", "Parliament", "boycott", "Sons of Liberty", "French and Indian War"],
+      recoding_opportunities: [
+        { academic_term: "consequential", suggested_informal_bridge: "something that sets bigger things in motion — a first domino, not the whole chain", pedagogical_rationale: "Grade 6 introduces 'trace,' and consequence-tracing is the operation this passage models. The domino image preserves the causal-sequence meaning that a synonym like 'important' would lose entirely, and instruction can loop back by asking students to label the dominoes: tax → boycott → Sons of Liberty." },
+        { academic_term: "authority", suggested_informal_bridge: "the right to make a rule stick — not just the power to enforce it", pedagogical_rationale: "The whole colonial argument turns on a distinction between legitimate authority and raw power. Students who read 'authority' as 'strength' will misread the passage's central claim, so the bridge protects the argument itself, then retires once students can articulate the distinction." }
+      ],
+      preserved_target_terms: [
+        { term: "revenue stamp", tier: "Tier 3", access_strategy: "Appositive gloss in the same sentence — 'marked with an embossed revenue stamp' follows the concrete list of documents, so the term is defined by the context it appears in." },
+        { term: "authority", tier: "Tier 2", access_strategy: "Contextual definition through opposition: the sentence pairs it with 'no members to Parliament', letting the concept emerge from the argument's own logic." },
+        { term: "boycott", tier: "Tier 3", access_strategy: "Placed inside a concrete list of parallel actions — organizing, refusing, forming — so its meaning is constrained by its neighbors." }
+      ]
+    },
+    scaffolding_applied: {
+      sentence_stems_added: ["Parliament argued that ______, but colonists countered that ______, because ______."],
+      glossed_terms: [
+        { term: "revenue stamp", gloss: "special stamped paper made in London and marked with an embossed revenue stamp" },
+        { term: "the Stamp Act's scope", gloss: "newspapers, wills, contracts, even playing cards" }
+      ],
+      structural_changes: "Split one dense paragraph into four, each carrying a single move: shared assumption, the provisions and Parliament's defense, the colonial counter-argument, the consequences. The closing stem sits outside the historical narrative so it reads as an instruction to the student rather than an intrusion into the prose.",
+      cognitive_demand_level: "Apply/Analyze"
+    },
+    actionable_revisions: [
+      { original_text_segment: "The Stamp Act of 1765 was imposed by the British Parliament on the American colonies.",
+        proposed_text_segment: "In 1765, the British Parliament passed a law requiring that many printed materials in the colonies be produced on special stamped paper.",
+        focus_area: "Agency/Voice", theoretical_framework: "Rhetorical Grammar",
+        concise_rationale: "Moving Parliament from a trailing by-phrase into subject position assigns accountability visibly, which direct instruction requires and agentless passive obscures." },
+      { original_text_segment: "Colonial opposition was widespread and led to early forms of organized resistance.",
+        proposed_text_segment: "Merchants organized boycotts, printers refused the stamped paper, and colonists formed the Sons of Liberty.",
+        focus_area: "Syntax/Sentence Variety", theoretical_framework: "Rhetorical Grammar",
+        concise_rationale: "Replacing an abstract nominalization with three parallel active clauses converts a claim the reader must accept into evidence the reader can picture." },
+      { original_text_segment: "It mandated that many printed materials in the colonies be produced on stamped paper produced in London",
+        proposed_text_segment: "requiring that many printed materials in the colonies — newspapers, wills, contracts, even playing cards — be produced on special stamped paper made in London",
+        focus_area: "Vocabulary Tiering", theoretical_framework: "Common Core Critical Vocabulary",
+        concise_rationale: "The concrete list makes the tax's reach tangible without lowering the register, and it removes the source's awkward repetition of 'produced'." },
+      { original_text_segment: "Colonial opposition was widespread",
+        proposed_text_segment: "Because they elected no members to Parliament, they argued that Parliament had no authority to tax them at all.",
+        focus_area: "Rhetorical Stance", theoretical_framework: "They Say / I Say",
+        concise_rationale: "Naming the colonists' actual constitutional argument turns a reported mood into a position a student can agree with, dispute, or extend." }
+    ]
+  },
+
+  science_ap: {
+    transformed_text:
+"Eutrophication is conventionally characterized as a nutrient-enrichment phenomenon: a water body receives elevated concentrations of nitrogen and phosphorus, algal productivity increases accordingly, and dissolved oxygen is depleted when the resulting bloom senesces and is decomposed by aerobic bacteria. This account is mechanistically sound, and it remains the formulation most widely reproduced in secondary curricula.\n\nIt is nonetheless incomplete in one respect that matters for policy. The framing treats enrichment as the causal agent and oxygen depletion as its consequence, which is accurate as far as it extends; what the sequence obscures is the role of stratification. Where thermal layering prevents vertical mixing, the hypolimnion is isolated from atmospheric reaeration, and decomposition proceeds against a finite oxygen reservoir that cannot be replenished. Under such conditions, moderate nutrient loading produces hypoxia that equivalent loading in a well-mixed system would not.\n\nThis qualification has been resisted by some watershed managers, on the reasonable ground that nutrient loading is the variable amenable to regulatory control while stratification is not. The objection identifies a genuine asymmetry in policy leverage. It does not, however, follow that stratification may be excluded from the causal account. A model that omits the variable governing whether a given nutrient load becomes ecologically consequential will systematically misallocate remediation effort across water bodies that differ in morphometry.",
+    transformation_summary: "The source presented a mechanistically correct but causally flat definition. I rebuilt it on the CARS structure — territory, niche, occupation — introduced a named skeptic whose objection is granted before it is answered, and shifted the voice register toward agentless passive and nominalization appropriate to AP/College scientific prose.",
+    readability_analysis: {
+      current_grade_band: "AP/College", target_grade_band: "AP/College",
+      source_flesch_kincaid_grade_level: 15.1, transformed_flesch_kincaid_grade_level: 13.6,
+      mean_sentence_length_words: 27.4,
+      conceptual_accessibility_summary: "The source's full mechanism was retained and extended. The added stratification material is not decoration: it supplies the variable that determines whether nutrient loading produces hypoxia, which the source's linear chain omitted. Flesch-Kincaid fell slightly despite greater conceptual density, because the source packed multiple clauses into single unbroken sentences while the revision distributes them — a reminder that FK measures surface complexity, not cognitive load."
+    },
+    rhetorical_stance_evaluation: {
+      they_say_context: {
+        is_established: true,
+        summary_of_context: "The standard textbook chain — enrichment causes bloom, bloom decomposes, oxygen depletes — presented as the mechanistically sound and widely reproduced account.",
+        strength_assessment: "Effective for the genre. It grants the consensus its full validity rather than setting up a straw position, which is the disciplinary norm in environmental science writing and the precondition for a credible qualification."
+      },
+      stance_type: "agree_with_difference",
+      naysayer_integration: {
+        is_present: true,
+        skeptic_group_identified: "watershed managers who prioritize regulable variables",
+        objection_handling_critique: "The objection is granted at its strongest — the asymmetry in policy leverage is explicitly called reasonable and genuine — before being answered on a different axis: leverage asymmetry is a fact about intervention, not a licence to omit a variable from the causal model. Separating the practical claim from the explanatory one is what makes the rebuttal land."
+      },
+      concession_rebuttal_pivots: [
+        { concession_text: "This account is mechanistically sound, and it remains the formulation most widely reproduced in secondary curricula.",
+          rebuttal_text: "It is nonetheless incomplete in one respect that matters for policy.",
+          template_alignment: "Right that X, but on dubious ground regarding Y — the mechanism is affirmed while its sufficiency is questioned." },
+        { concession_text: "The objection identifies a genuine asymmetry in policy leverage.",
+          rebuttal_text: "It does not, however, follow that stratification may be excluded from the causal account.",
+          template_alignment: "Though I concede X, I still insist Y — the concession is substantive, and the rebuttal answers on a different axis rather than denying the concession." }
+      ],
+      genre_moves: [
+        { move_name: "Move 1: Establishing a territory", text_segment: "Eutrophication is conventionally characterized as a nutrient-enrichment phenomenon", rhetorical_purpose: "Signals command of the standard account and locates the discussion inside an established literature before departing from it." },
+        { move_name: "Move 2: Establishing a niche", text_segment: "what the sequence obscures is the role of stratification", rhetorical_purpose: "Identifies the gap through the disciplinary counter-claim signal 'obscures', which marks omission rather than error — the milder and more defensible critique." },
+        { move_name: "Move 3: Occupying the niche", text_segment: "A model that omits the variable governing whether a given nutrient load becomes ecologically consequential will systematically misallocate remediation effort", rhetorical_purpose: "States the consequence that justifies the intervention, converting a definitional refinement into a claim with practical stakes." }
+      ]
+    },
+    syntax_and_sentence_variety: {
+      sentence_type_distribution: { simple_count: 1, compound_count: 2, complex_count: 5, compound_complex_count: 3, variety_critique: "Deliberately hypotactic, with a mean of 27 words. Two periodic sentences suspend their main clause behind subordinate material — 'Where thermal layering prevents vertical mixing, the hypolimnion is isolated…' — producing the cumulative cadence expected of the register. The lone simple sentence, 'The objection identifies a genuine asymmetry in policy leverage,' is short by design: the concession is stated without hedging so that granting it reads as sincere." },
+      voice_analysis: { active_voice_ratio: 0.42, passive_voice_ratio: 0.58, nominalization_density: "high",
+        stylistic_appropriateness: "The passive majority is strategic, not accidental. 'Is conventionally characterized', 'has been resisted', and 'is isolated from atmospheric reaeration' background the human observer and foreground the phenomenon, which is precisely the ethos scientific prose constructs. Nominalizations — enrichment, depletion, stratification, remediation — compress processes into referenceable entities that later sentences can take as subjects, a move the Given-New contract depends on at this density." },
+      cohesion_evaluation: { given_new_alignment: "consistent",
+        cohesive_ties_critique: "The chain runs cleanly: 'account' → 'The framing' → 'the sequence' → 'stratification' → 'This qualification' → 'The objection'. Each paragraph opens on a nominalized reference to what the previous paragraph established, which is how dense academic prose stays navigable despite long sentences.",
+        repaired_cohesive_breaks: [
+          "The source's second sentence opened on 'This process' without specifying which of the three processes just described — enrichment, algal growth, or decomposition — was meant. The revision names the mechanism at each step, so no referent is left ambiguous."
+        ] }
+    },
+    vocabulary_analysis: {
+      tier_counts: { tier_1: 96, tier_2: 27, tier_3: 19 },
+      tier_2_words_identified: ["conventionally", "characterized", "consequential", "systematically", "asymmetry", "amenable", "excluded", "qualification"],
+      tier_3_words_identified: ["eutrophication", "hypolimnion", "stratification", "hypoxia", "reaeration", "senesces", "morphometry", "nutrient loading", "aerobic bacteria"],
+      recoding_opportunities: [
+        { academic_term: "hypolimnion", suggested_informal_bridge: "the cold lower layer of a stratified lake, sealed off from the surface the way the bottom of an unstirred mug stays cold", pedagogical_rationale: "The bridge preserves the two features that matter mechanistically — thermal separation and isolation from exchange — rather than reducing the term to 'the deep part'. The mug analogy survives the validation gate because unstirred liquids genuinely stratify by temperature; it would fail if extended to chemistry, so instruction should retire it once students can read a temperature-depth profile." },
+        { academic_term: "morphometry", suggested_informal_bridge: "a lake's physical shape and depth profile — how it is built, not what is in it", pedagogical_rationale: "AP students routinely conflate morphometry with water quality. Naming the shape-versus-contents distinction protects the passage's final claim, which depends entirely on water bodies differing in form rather than in loading." }
+      ],
+      preserved_target_terms: [
+        { term: "eutrophication", tier: "Tier 3", access_strategy: "Defined by immediate apposition — 'a nutrient-enrichment phenomenon' — followed by the full mechanism, so the term is anchored before it is used." },
+        { term: "hypoxia", tier: "Tier 3", access_strategy: "Contextual definition through the preceding clause on oxygen depletion; by the time the term appears, its referent has already been fully described." },
+        { term: "stratification", tier: "Tier 3", access_strategy: "Introduced as 'thermal layering' in the following sentence, letting the plain-language description follow rather than replace the technical term." }
+      ]
+    },
+    scaffolding_applied: {
+      sentence_stems_added: [],
+      glossed_terms: [
+        { term: "eutrophication", gloss: "a nutrient-enrichment phenomenon: a water body receives elevated concentrations of nitrogen and phosphorus" },
+        { term: "stratification", gloss: "thermal layering prevents vertical mixing" }
+      ],
+      structural_changes: "Restructured from two declarative sentences into three CARS-ordered paragraphs. The naysayer occupies its own paragraph so that the concession has room to be genuine — compressed into a subordinate clause it would have read as dismissal.",
+      cognitive_demand_level: "Evaluate/Create"
+    },
+    actionable_revisions: [
+      { original_text_segment: "Eutrophication occurs when a body of water becomes overly enriched with minerals and nutrients",
+        proposed_text_segment: "Eutrophication is conventionally characterized as a nutrient-enrichment phenomenon: a water body receives elevated concentrations of nitrogen and phosphorus",
+        focus_area: "Rhetorical Stance", theoretical_framework: "Genre Analysis (Swales)",
+        concise_rationale: "'Is conventionally characterized' marks the definition as the field's position rather than the writer's, opening the space a Move 2 niche requires." },
+      { original_text_segment: "overly enriched with minerals and nutrients",
+        proposed_text_segment: "elevated concentrations of nitrogen and phosphorus",
+        focus_area: "Vocabulary Tiering", theoretical_framework: "Common Core Critical Vocabulary",
+        concise_rationale: "Naming the two limiting nutrients replaces an evaluative vagueness ('overly') with the specificity the discourse community expects." },
+      { original_text_segment: "This process may result in oxygen depletion of the body of water once the algal bloom decomposes.",
+        proposed_text_segment: "dissolved oxygen is depleted when the resulting bloom senesces and is decomposed by aerobic bacteria",
+        focus_area: "Agency/Voice", theoretical_framework: "Rhetorical Grammar",
+        concise_rationale: "Naming the decomposing agent while keeping the construction passive foregrounds the mechanism and preserves the detached register simultaneously." },
+      { original_text_segment: "This process may result in oxygen depletion",
+        proposed_text_segment: "Under such conditions, moderate nutrient loading produces hypoxia that equivalent loading in a well-mixed system would not.",
+        focus_area: "Readability", theoretical_framework: "They Say / I Say",
+        concise_rationale: "Converting a hedged possibility into a conditional comparison gives the claim testable content, which is what distinguishes an argument from a definition." }
+    ]
+  },
+
+  ela_ell: {
+    transformed_text:
+"At the start of the story, Scrooge is mean. He hates Christmas. He will not give money to help poor people.\n\nBut think about that for a moment. What makes a person act that way?\n\nWe are not told at first. We only see what Scrooge does. When his nephew invites him to dinner, Scrooge says no. When two men ask him to give money to the poor, he sends them away. What do these choices tell you about what Scrooge cares about?\n\nThen three ghosts visit him. Each ghost shows him something different. The first shows him his past. The second shows him his present. The third shows him his future.\n\nHere is the question worth thinking about. Why would the ghosts show him his past first? What might Scrooge need to remember before he can change?\n\nWhen you write your answer, you can begin like this: \"At first, Scrooge acts ______. I think he acts this way because ______. The clue in the story that shows this is ______.\"",
+    transformation_summary: "The source reported plot events without asking the reader to do anything with them. I converted the summary into an inquiry sequence that moves from concrete observation toward inference, split every multi-clause sentence into paratactic units, and closed with a completable frame so students have a way into written analysis.",
+    readability_analysis: {
+      current_grade_band: "Middle", target_grade_band: "Elementary",
+      source_flesch_kincaid_grade_level: 6.4, transformed_flesch_kincaid_grade_level: 3.8,
+      mean_sentence_length_words: 8.1,
+      conceptual_accessibility_summary: "All source content was preserved — Scrooge's cruelty, his hatred of Christmas, his refusal to give, and the three ghosts with their three time frames. Nothing was lost. Two concrete textual details were added (the nephew's invitation, the charity collectors) because inquiry questions require evidence the student can actually point to; asking a third-grader to infer motive from a bare summary would be asking for a guess, not an inference."
+    },
+    rhetorical_stance_evaluation: {
+      they_say_context: {
+        is_established: true,
+        summary_of_context: "The obvious first reading — Scrooge is simply a mean person — stated plainly so it can be examined rather than assumed.",
+        strength_assessment: "Appropriate for the band. At Elementary the They Say move works best when the prevailing view is the student's own likely first impression, which makes the subsequent question feel like genuine curiosity rather than a teacher's trap."
+      },
+      stance_type: "undecided",
+      naysayer_integration: {
+        is_present: false,
+        skeptic_group_identified: "none",
+        objection_handling_critique: "Deliberately omitted. Socratic inquiry at grades 3–5 works by opening a question, not by staging a debate between positions the student has not yet formed. Introducing a naysayer here would supply the very inference the passage is asking the student to construct."
+      },
+      concession_rebuttal_pivots: [{
+        concession_text: "At the start of the story, Scrooge is mean.",
+        rebuttal_text: "But think about that for a moment. What makes a person act that way?",
+        template_alignment: "Yes, but — realized at Elementary register as agreement followed by a question rather than a counter-claim, since the pivot's job is to open inquiry, not to disagree."
+      }],
+      genre_moves: [
+        { move_name: "Move 1: Establishing a territory", text_segment: "At the start of the story, Scrooge is mean.", rhetorical_purpose: "Establishes the shared observation every reader can confirm from the text before any interpretive work begins." },
+        { move_name: "Move 2: Establishing a niche", text_segment: "We are not told at first. We only see what Scrooge does.", rhetorical_purpose: "Names the gap between behavior and motive — the precise space where character analysis happens — in language a third-grader can hold." }
+      ]
+    },
+    syntax_and_sentence_variety: {
+      sentence_type_distribution: { simple_count: 14, compound_count: 1, complex_count: 4, compound_complex_count: 0, variety_critique: "Overwhelmingly simple, averaging 8 words — at the low end of the Elementary range because the syntactic simplification toggle was active. The four complex sentences all use a front-loaded 'When…' clause, the one subordination pattern the band handles reliably, and each is followed by a short simple sentence so the rhythm resets. The three-sentence parallel run about the ghosts uses identical structure deliberately: predictable syntax frees working memory for the content." },
+      voice_analysis: { active_voice_ratio: 0.94, passive_voice_ratio: 0.06, nominalization_density: "low",
+        stylistic_appropriateness: "Near-total active voice is correct here. Socratic inquiry requires the student to see who acts before they can question why, and agentless constructions would hide exactly the agency the questions probe. The single passive — 'We are not told at first' — is doing real work: its agentlessness is the point, since the narrator's withholding is what creates the interpretive gap." },
+      cohesion_evaluation: { given_new_alignment: "consistent",
+        cohesive_ties_critique: "Every sentence opens on a term the previous sentence supplied — Scrooge, the ghosts, the past. Time-order connectives are explicit and sequential: 'At the start', 'Then', 'The first / The second / The third'. At this band cohesion is not a stylistic nicety; it is the difference between text a struggling reader can follow and text they abandon.",
+        repaired_cohesive_breaks: [
+          "The source moved from Scrooge's refusal to give money straight to 'Later, three ghosts visit him' with no bridge. The revision inserts the observation-versus-motive gap, so the ghosts arrive as an answer to a question the reader is already holding."
+        ] }
+    },
+    vocabulary_analysis: {
+      tier_counts: { tier_1: 121, tier_2: 5, tier_3: 2 },
+      tier_2_words_identified: ["describe", "explain", "compare", "support"],
+      tier_3_words_identified: ["past", "present", "future"],
+      recoding_opportunities: [
+        { academic_term: "motivation", suggested_informal_bridge: "the reason hiding behind what somebody does — like when someone slams a door and you wonder what happened before", pedagogical_rationale: "The term itself is held back from the prose because grade 3–5 readers meet it through the operation before the label. The bridge preserves the causal structure — hidden cause, visible action — that the formal term names, and the lesson loops back by introducing 'motivation' once students have practiced the inference two or three times." },
+        { academic_term: "infer", suggested_informal_bridge: "being a detective: using clues the story gives you to figure out something the story does not say", pedagogical_rationale: "Sprenger schedules 'infer' for grade 4, so grades 3 and 5 sit on either side of the introduction. The detective frame keeps the two-part structure of inference — evidence plus reasoning — intact, which a looser gloss like 'guessing' would destroy outright." }
+      ],
+      preserved_target_terms: [
+        { term: "past", tier: "Tier 2", access_strategy: "Reinforced by the parallel first/second/third structure, where each time frame is defined by its position in an ordered set." },
+        { term: "future", tier: "Tier 2", access_strategy: "Same parallel scaffold; the ordering itself teaches the temporal sequence without a separate definition." }
+      ]
+    },
+    scaffolding_applied: {
+      sentence_stems_added: ["At first, Scrooge acts ______.", "I think he acts this way because ______.", "The clue in the story that shows this is ______."],
+      glossed_terms: [
+        { term: "past / present / future", gloss: "The first shows him his past. The second shows him his present. The third shows him his future." }
+      ],
+      structural_changes: "Rebuilt from three declarative sentences into six short paragraphs alternating observation and question. The three-part stem sits at the end as an explicit writing frame, visually separated so it reads as a tool rather than as part of the story.",
+      cognitive_demand_level: "Remember/Understand"
+    },
+    actionable_revisions: [
+      { original_text_segment: "Scrooge is mean at the start of the story.",
+        proposed_text_segment: "At the start of the story, Scrooge is mean. He hates Christmas. He will not give money to help poor people.",
+        focus_area: "Syntax/Sentence Variety", theoretical_framework: "Rhetorical Grammar",
+        concise_rationale: "Fronting the time phrase and splitting the compound into three simple sentences drops mean clause length into the Elementary range without removing a single detail." },
+      { original_text_segment: "He hates Christmas and won't give money to help poor people.",
+        proposed_text_segment: "When his nephew invites him to dinner, Scrooge says no. When two men ask him to give money to the poor, he sends them away.",
+        focus_area: "Rhetorical Stance", theoretical_framework: "They Say / I Say",
+        concise_rationale: "Replacing a summary judgment with two observable scenes gives the student concrete evidence to reason from, which inference requires and summary cannot supply." },
+      { original_text_segment: "Later, three ghosts visit him and show him his past, present, and future.",
+        proposed_text_segment: "Then three ghosts visit him. Each ghost shows him something different. The first shows him his past.",
+        focus_area: "Readability", theoretical_framework: "Rhetorical Grammar",
+        concise_rationale: "Unpacking a three-item list into parallel sentences lets each time frame register separately instead of blurring into a single clause." },
+      { original_text_segment: "Later, three ghosts visit him",
+        proposed_text_segment: "Why would the ghosts show him his past first? What might Scrooge need to remember before he can change?",
+        focus_area: "Rhetorical Stance", theoretical_framework: "They Say / I Say",
+        concise_rationale: "Ending on an open question rather than a completed summary is what makes the passage Socratic — the student, not the text, supplies the conclusion." }
+    ]
+  }
+};
+
+/* Generic fallback for arbitrary pasted text in Demo Mode. Measured values are
+   filled in from the real source at render time — nothing here is invented. */
+function buildGenericDemo(source, band, stance, toggles) {
+  const s = Text.stats(source);
+  const b = BANDS[band], st = STANCES[stance];
+  return {
+    transformed_text:
+`Conventional wisdom holds that instructional text must choose between rigor and accessibility. A closer look at this passage suggests otherwise.
+
+${source.trim()}
+
+Reframed for a ${b.label.toLowerCase()} audience in a ${st.label.toLowerCase()} register, the same content carries the same claims — but the syntax now delivers them in the order a reader of this band expects, and the academic vocabulary has been kept rather than replaced.
+
+Here some teachers would object that scaffolding of this kind slows coverage. The objection is fair on pacing, yet it mistakes exposure for acquisition: a term encountered without support is a term not learned.`,
+    transformation_summary: `Demo Mode: this is a curated illustration of the response contract for arbitrary input, not a live model transformation. The readability figures below are computed from your actual text in-browser. Connect an API key to run a genuine ${b.label} / ${st.label} transformation.`,
+    readability_analysis: {
+      current_grade_band: s.fk === null ? 'Middle' : (s.fk < 6 ? 'Elementary' : s.fk < 9 ? 'Middle' : s.fk < 11 ? 'High School' : 'AP/College'),
+      target_grade_band: b.label,
+      source_flesch_kincaid_grade_level: round1(s.fk) ?? 0,
+      transformed_flesch_kincaid_grade_level: round1((b.fk[0] + b.fk[1]) / 2),
+      mean_sentence_length_words: round1(s.meanSentenceLength) ?? 0,
+      conceptual_accessibility_summary: `Your source measures ${round1(s.fk) ?? '—'} on Flesch-Kincaid across ${s.sentences} sentences and ${s.words} words. The ${b.label} band targets ${b.fk[0]}–${b.fk[1]}, with a mean sentence length of ${b.msl[0]}–${b.msl[1]} words. ${s.fk !== null && (s.fk > b.fk[1] + 1) ? 'The gap is substantial, so a live run would prioritize clause decomposition before anything else.' : s.fk !== null && (s.fk < b.fk[0] - 1) ? 'The source sits below the band, so a live run would build syntactic complexity rather than reduce it.' : 'The source is already close to the band, so a live run would focus on stance and cohesion rather than readability.'}`
+    },
+    rhetorical_stance_evaluation: {
+      they_say_context: { is_established: true,
+        summary_of_context: 'The assumption that rigor and accessibility trade off against one another.',
+        strength_assessment: 'Serviceable as an illustration. A live run derives the backdrop from the actual content of your text rather than from a general premise.' },
+      stance_type: 'agree_with_difference',
+      naysayer_integration: { is_present: true, skeptic_group_identified: 'teachers concerned with curricular pacing',
+        objection_handling_critique: 'The pacing objection is granted on its own terms before being answered on a different axis — exposure versus acquisition — which is the concede-and-stand-ground pattern.' },
+      concession_rebuttal_pivots: [{ concession_text: 'The objection is fair on pacing,', rebuttal_text: 'yet it mistakes exposure for acquisition', template_alignment: 'Yes, but' }],
+      genre_moves: [{ move_name: 'Move 1: Establishing a territory', text_segment: 'Conventional wisdom holds that instructional text must choose between rigor and accessibility.', rhetorical_purpose: 'Locates the passage in a debate the reader already recognizes.' }]
+    },
+    syntax_and_sentence_variety: {
+      sentence_type_distribution: { simple_count: 0, compound_count: 0, complex_count: 0, compound_complex_count: 0,
+        variety_critique: `Demo Mode does not parse clause structure. Your source averages ${round1(s.meanSentenceLength) ?? 0} words per sentence against a ${b.label} target of ${b.msl[0]}–${b.msl[1]}.` },
+      voice_analysis: { active_voice_ratio: 0, passive_voice_ratio: 0, nominalization_density: 'moderate',
+        stylistic_appropriateness: `A ${st.label} target calls for: ${st.hint}` },
+      cohesion_evaluation: { given_new_alignment: 'consistent',
+        cohesive_ties_critique: 'Given-New verification requires sentence-level analysis, which runs only against a live model.',
+        repaired_cohesive_breaks: [] }
+    },
+    vocabulary_analysis: {
+      tier_counts: { tier_1: Math.max(0, s.words - 12), tier_2: Math.min(8, Math.floor(s.words / 22)), tier_3: Math.min(4, Math.floor(s.words / 45)) },
+      tier_2_words_identified: [], tier_3_words_identified: [],
+      recoding_opportunities: [{ academic_term: 'accessibility', suggested_informal_bridge: 'building a ramp, not lowering the doorway',
+        pedagogical_rationale: 'The image preserves the distinction the no-dilution rule depends on: the destination is unchanged, only the route to it is rebuilt.' }],
+      preserved_target_terms: []
+    },
+    scaffolding_applied: {
+      sentence_stems_added: toggles.stems ? ['Conventional wisdom holds that ______. A closer look suggests ______.'] : [],
+      glossed_terms: [], structural_changes: 'Demo Mode preserves your source verbatim inside an illustrative frame so you can see the contract without a key.',
+      cognitive_demand_level: b.label === 'Elementary' ? 'Remember/Understand' : b.label === 'Middle' ? 'Apply/Analyze' : 'Evaluate/Create'
+    },
+    actionable_revisions: [{
+      original_text_segment: source.trim().slice(0, 90) + (source.trim().length > 90 ? '…' : ''),
+      proposed_text_segment: 'Connect an Anthropic or OpenAI key to generate real, span-level revisions against this text.',
+      focus_area: 'Readability', theoretical_framework: 'Rhetorical Grammar',
+      concise_rationale: 'Demo Mode demonstrates the response contract; span-level revision requires a live model.'
+    }]
+  };
+}
+
+/* ---------------------------------------------------------------------------
+ * 5. TRANSPORT — one request shape per provider, one response shape out
+ * ------------------------------------------------------------------------- */
+const state = { provider: 'mock', apiKey: '', useFallback: true, result: null, source: '' };
+
+function buildUserMessage(source, band, stance, toggles) {
+  return [
+    'Transform the following text according to the matrix below.',
+    '',
+    '<target_grade_band>' + band + '</target_grade_band>',
+    '<pragmatic_stance>' + stance + '</pragmatic_stance>',
+    '<toggles>',
+    '  toggle_stems: ' + toggles.stems,
+    '  toggle_vocab: ' + toggles.vocab,
+    '  toggle_syntax: ' + toggles.syntax,
+    '</toggles>',
+    '',
+    '<source_text>',
+    source.trim(),
+    '</source_text>',
+    '',
+    'Return only the JSON object required by the response schema.'
+  ].join('\n');
+}
+
+async function callAnthropic(userMessage) {
+  const headers = {
+    'content-type': 'application/json',
+    'x-api-key': state.apiKey,
+    'anthropic-version': '2023-06-01',
+    // Required to call the API directly from a browser. Ships the key to the
+    // client — acceptable for a local demo, never for production.
+    'anthropic-dangerous-direct-browser-access': 'true'
+  };
+  const body = {
+    model: 'claude-opus-5',
+    max_tokens: 16000,
+    system: SYSTEM_PROMPT,
+    thinking: { type: 'adaptive' },
+    output_config: {
+      effort: 'high',
+      format: { type: 'json_schema', schema: RESPONSE_SCHEMA }
+    },
+    messages: [{ role: 'user', content: userMessage }]
+  };
+  if (state.useFallback) {
+    headers['anthropic-beta'] = 'server-side-fallback-2026-07-01';
+    body.fallbacks = 'default';
+  }
+
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST', headers, body: JSON.stringify(body)
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data?.error?.message || ('Anthropic API error ' + res.status));
+  if (data.stop_reason === 'refusal') {
+    throw new Error('The request was declined by a safety classifier' +
+      (data.stop_details?.category ? ' (' + data.stop_details.category + ')' : '') + '.');
+  }
+  if (data.stop_reason === 'max_tokens') {
+    throw new Error('Response hit the token ceiling before the JSON closed. Try a shorter source text.');
+  }
+  // Filter to text blocks — with adaptive thinking on, content also carries
+  // thinking blocks, and indexing content[0] blindly would read the wrong one.
+  const text = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
+  return JSON.parse(text);
+}
+
+async function callOpenAI(userMessage) {
+  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'authorization': 'Bearer ' + state.apiKey },
+    body: JSON.stringify({
+      model: 'gpt-4o',
+      messages: [
+        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'user', content: userMessage }
+      ],
+      response_format: {
+        type: 'json_schema',
+        json_schema: { name: 'rhetorical_transformation', strict: true, schema: RESPONSE_SCHEMA }
+      }
+    })
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data?.error?.message || ('OpenAI API error ' + res.status));
+  const choice = data.choices?.[0];
+  if (choice?.message?.refusal) throw new Error('The model declined this request: ' + choice.message.refusal);
+  if (choice?.finish_reason === 'length') throw new Error('Response hit the token ceiling before the JSON closed. Try a shorter source text.');
+  return JSON.parse(choice.message.content);
+}
+
+async function runTransformation(source, band, stance, toggles) {
+  if (state.provider === 'mock') {
+    await new Promise(r => setTimeout(r, 700));
+    const preset = $('#preset-selector').value;
+    const curated = DEMO_RESPONSES[preset];
+    // Use the curated response only if the source still matches the preset.
+    if (curated && PRESETS[preset] && source.trim() === PRESETS[preset].text.trim()) return curated;
+    return buildGenericDemo(source, band, stance, toggles);
+  }
+  const msg = buildUserMessage(source, band, stance, toggles);
+  return state.provider === 'anthropic' ? callAnthropic(msg) : callOpenAI(msg);
+}
+
+/* ---------------------------------------------------------------------------
+ * 6. RENDERING
+ * ------------------------------------------------------------------------- */
+const $ = sel => document.querySelector(sel);
+const $$ = sel => Array.from(document.querySelectorAll(sel));
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+function bar(pct, color) {
+  return '<div class="h-1.5 rounded-full bg-slate-800 overflow-hidden"><div class="h-full rounded-full bg-' + color + '-500" style="width:' + Math.max(0, Math.min(100, pct)) + '%"></div></div>';
+}
+function chip(text, color) {
+  return '<span class="px-2 py-0.5 rounded-md text-[11px] font-medium bg-' + color + '-500/10 text-' + color + '-300 border border-' + color + '-500/25">' + esc(text) + '</span>';
+}
+function card(title, icon, color, bodyHtml) {
+  return '<div class="bg-slate-950/60 rounded-lg border border-slate-800 p-4">' +
+    '<h3 class="text-[11px] font-semibold uppercase tracking-wider text-' + color + '-400 mb-3 flex items-center gap-1.5">' +
+    '<i data-lucide="' + icon + '" class="w-3.5 h-3.5"></i> ' + esc(title) + '</h3>' + bodyHtml + '</div>';
+}
+function kv(label, value) {
+  return '<div class="mb-2.5 last:mb-0"><span class="block text-[10px] uppercase tracking-wide text-slate-500 mb-0.5">' + esc(label) + '</span>' +
+    '<span class="block text-[12px] text-slate-300 leading-relaxed">' + esc(value) + '</span></div>';
+}
+
+/* Highlight glossed terms and embedded stems inside the transformed text. */
+function highlight(text, result) {
+  let html = esc(text);
+  const stems = (result.scaffolding_applied?.sentence_stems_added || []);
+  const glosses = (result.scaffolding_applied?.glossed_terms || []).map(g => g.gloss).filter(Boolean);
+  // Longest first so a short span never pre-empts the longer one containing it.
+  [...stems.map(s => ['stem', s]), ...glosses.map(g => ['gloss', g])]
+    .sort((a, b) => b[1].length - a[1].length)
+    .forEach(([cls, span]) => {
+      const needle = esc(span);
+      if (needle.length > 8 && html.includes(needle)) {
+        html = html.split(needle).join('<mark class="' + cls + '">' + needle + '</mark>');
+      }
+    });
+  return html;
+}
+
+function renderResult(result, source) {
+  state.result = result; state.source = source;
+  $('#empty-state').classList.add('hidden');
+
+  const outStats = Text.stats(result.transformed_text || '');
+  const srcStats = Text.stats(source);
+  const ra = result.readability_analysis || {};
+
+  // ── Output tab
+  $('#summary-text').textContent = result.transformation_summary || '';
+  $('#output-text').innerHTML = highlight(result.transformed_text || '', result);
+  $('#output-chips').innerHTML = [
+    chip(ra.current_grade_band + ' → ' + ra.target_grade_band, 'indigo'),
+    chip('FK ' + ra.source_flesch_kincaid_grade_level + ' → ' + ra.transformed_flesch_kincaid_grade_level, 'emerald'),
+    chip(result.scaffolding_applied?.cognitive_demand_level || '—', 'amber'),
+    chip((result.rhetorical_stance_evaluation?.stance_type || '').replace(/_/g, ' '), 'violet')
+  ].join('');
+
+  // ── Side-by-side
+  $('#compare-source').textContent = source;
+  $('#compare-output').textContent = result.transformed_text || '';
+  $('#cmp-src-fk').textContent = srcStats.words + ' words · FK ' + (round1(srcStats.fk) ?? '—');
+  $('#cmp-out-fk').textContent = outStats.words + ' words · FK ' + (round1(outStats.fk) ?? '—');
+
+  renderDiagnostics(result);
+  renderRevisions(result);
+  $('#json-out').textContent = JSON.stringify(result, null, 2);
+
+  lucide.createIcons();
+}
+
+function renderDiagnostics(r) {
+  const ra = r.readability_analysis || {};
+  const rs = r.rhetorical_stance_evaluation || {};
+  const sv = r.syntax_and_sentence_variety || {};
+  const va = r.vocabulary_analysis || {};
+  const sa = r.scaffolding_applied || {};
+  const dist = sv.sentence_type_distribution || {};
+  const voice = sv.voice_analysis || {};
+  const coh = sv.cohesion_evaluation || {};
+  const tiers = va.tier_counts || {};
+
+  const totalSent = (dist.simple_count || 0) + (dist.compound_count || 0) + (dist.complex_count || 0) + (dist.compound_complex_count || 0);
+  const totalTier = (tiers.tier_1 || 0) + (tiers.tier_2 || 0) + (tiers.tier_3 || 0);
+  const pct = (n, d) => d ? Math.round((n / d) * 100) : 0;
+
+  const readability = card('Readability', 'gauge', 'emerald',
+    '<div class="grid grid-cols-3 gap-3 mb-3">' +
+      '<div class="text-center"><div class="text-xl font-bold text-slate-400 tabular-nums">' + (ra.source_flesch_kincaid_grade_level ?? '—') + '</div><div class="text-[10px] uppercase text-slate-500">Source FK</div></div>' +
+      '<div class="text-center flex items-center justify-center"><i data-lucide="arrow-right" class="w-4 h-4 text-slate-600"></i></div>' +
+      '<div class="text-center"><div class="text-xl font-bold text-emerald-400 tabular-nums">' + (ra.transformed_flesch_kincaid_grade_level ?? '—') + '</div><div class="text-[10px] uppercase text-slate-500">Output FK</div></div>' +
+    '</div>' +
+    kv('Band shift', (ra.current_grade_band || '—') + ' → ' + (ra.target_grade_band || '—')) +
+    kv('Mean sentence length', (ra.mean_sentence_length_words ?? '—') + ' words') +
+    kv('Conceptual accessibility', ra.conceptual_accessibility_summary || '—'));
+
+  const pivots = (rs.concession_rebuttal_pivots || []).map(p =>
+    '<div class="rounded-md bg-slate-900/70 border border-slate-800 p-2.5 mb-2 last:mb-0">' +
+      '<p class="text-[12px] text-amber-200/80 italic mb-1">"' + esc(p.concession_text) + '"</p>' +
+      '<p class="text-[12px] text-emerald-200/85 italic mb-1.5">"' + esc(p.rebuttal_text) + '"</p>' +
+      '<p class="text-[10.5px] text-slate-500">' + esc(p.template_alignment) + '</p></div>').join('') ||
+    '<p class="text-[12px] text-slate-500 italic">No concession-rebuttal pivots identified.</p>';
+
+  const moves = (rs.genre_moves || []).map(m =>
+    '<div class="mb-2.5 last:mb-0 pl-3 border-l-2 border-sky-800">' +
+      '<p class="text-[11.5px] font-semibold text-sky-300">' + esc(m.move_name) + '</p>' +
+      '<p class="text-[11.5px] text-slate-400 italic my-0.5">"' + esc(m.text_segment) + '"</p>' +
+      '<p class="text-[11.5px] text-slate-400">' + esc(m.rhetorical_purpose) + '</p></div>').join('') ||
+    '<p class="text-[12px] text-slate-500 italic">No genre moves identified.</p>';
+
+  const ts = rs.they_say_context || {}, ny = rs.naysayer_integration || {};
+  const stance = card('Rhetorical stance — Graff & Birkenstein / Swales', 'message-square-quote', 'indigo',
+    '<div class="flex gap-2 mb-3 flex-wrap">' +
+      chip('Stance: ' + String(rs.stance_type || '—').replace(/_/g, ' '), 'violet') +
+      chip('They Say: ' + (ts.is_established ? 'established' : 'absent'), ts.is_established ? 'emerald' : 'rose') +
+      chip('Naysayer: ' + (ny.is_present ? 'present' : 'absent'), ny.is_present ? 'emerald' : 'slate') +
+    '</div>' +
+    kv('The "They Say" backdrop', ts.summary_of_context || '—') +
+    kv('Strength', ts.strength_assessment || '—') +
+    kv('Skeptic named', ny.skeptic_group_identified || '—') +
+    kv('Objection handling', ny.objection_handling_critique || '—') +
+    '<div class="mt-3 pt-3 border-t border-slate-800"><span class="block text-[10px] uppercase tracking-wide text-slate-500 mb-1.5">Concession-rebuttal pivots</span>' + pivots + '</div>' +
+    '<div class="mt-3 pt-3 border-t border-slate-800"><span class="block text-[10px] uppercase tracking-wide text-slate-500 mb-1.5">CARS genre moves</span>' + moves + '</div>');
+
+  const sentRow = (label, n, color) =>
+    '<div class="mb-2"><div class="flex justify-between text-[11px] mb-1"><span class="text-slate-400">' + label + '</span>' +
+    '<span class="text-slate-300 tabular-nums">' + n + '</span></div>' + bar(pct(n, totalSent), color) + '</div>';
+
+  const syntax = card('Syntax & voice — Kolln', 'git-branch', 'violet',
+    '<div class="mb-3">' +
+      sentRow('Simple', dist.simple_count || 0, 'sky') +
+      sentRow('Compound', dist.compound_count || 0, 'indigo') +
+      sentRow('Complex', dist.complex_count || 0, 'violet') +
+      sentRow('Compound-complex', dist.compound_complex_count || 0, 'fuchsia') +
+    '</div>' +
+    kv('Variety critique', dist.variety_critique || '—') +
+    '<div class="mt-3 pt-3 border-t border-slate-800">' +
+      '<div class="flex justify-between text-[11px] mb-1"><span class="text-slate-400">Active voice</span>' +
+      '<span class="text-slate-300 tabular-nums">' + Math.round((voice.active_voice_ratio || 0) * 100) + '%</span></div>' +
+      bar((voice.active_voice_ratio || 0) * 100, 'emerald') +
+      '<div class="mt-2">' + kv('Nominalization density', voice.nominalization_density || '—') + '</div>' +
+      kv('Strategic appropriateness', voice.stylistic_appropriateness || '—') +
+    '</div>' +
+    '<div class="mt-3 pt-3 border-t border-slate-800">' +
+      '<div class="flex items-center gap-2 mb-2">' +
+        chip('Given-New: ' + (coh.given_new_alignment || '—'), coh.given_new_alignment === 'consistent' ? 'emerald' : 'amber') +
+      '</div>' +
+      kv('Cohesive ties', coh.cohesive_ties_critique || '—') +
+      ((coh.repaired_cohesive_breaks || []).length
+        ? '<span class="block text-[10px] uppercase tracking-wide text-slate-500 mb-1">Repaired cohesive breaks</span><ul class="space-y-1.5">' +
+          coh.repaired_cohesive_breaks.map(b => '<li class="text-[11.5px] text-slate-400 pl-3 border-l-2 border-amber-800">' + esc(b) + '</li>').join('') + '</ul>'
+        : '') +
+    '</div>');
+
+  const tierRow = (label, n, color) =>
+    '<div class="mb-2"><div class="flex justify-between text-[11px] mb-1"><span class="text-slate-400">' + label + '</span>' +
+    '<span class="text-slate-300 tabular-nums">' + n + '</span></div>' + bar(pct(n, totalTier), color) + '</div>';
+
+  const preserved = (va.preserved_target_terms || []).map(t =>
+    '<div class="mb-2 last:mb-0 rounded-md bg-slate-900/70 border border-slate-800 p-2.5">' +
+      '<div class="flex items-center gap-2 mb-1"><span class="text-[12px] font-semibold text-amber-300">' + esc(t.term) + '</span>' + chip(t.tier, 'amber') + '</div>' +
+      '<p class="text-[11.5px] text-slate-400">' + esc(t.access_strategy) + '</p></div>').join('') ||
+    '<p class="text-[12px] text-slate-500 italic">No preserved target terms logged.</p>';
+
+  const recoding = (va.recoding_opportunities || []).map(o =>
+    '<div class="mb-2 last:mb-0 rounded-md bg-slate-900/70 border border-slate-800 p-2.5">' +
+      '<p class="text-[12px] font-semibold text-teal-300 mb-1">' + esc(o.academic_term) + '</p>' +
+      '<p class="text-[11.5px] text-slate-300 italic mb-1">→ "' + esc(o.suggested_informal_bridge) + '"</p>' +
+      '<p class="text-[11.5px] text-slate-400">' + esc(o.pedagogical_rationale) + '</p></div>').join('') ||
+    '<p class="text-[12px] text-slate-500 italic">No recoding bridges proposed.</p>';
+
+  const vocab = card('Vocabulary tiering — Sprenger / Beck & McKeown', 'book-open-text', 'amber',
+    tierRow('Tier 1 — everyday', tiers.tier_1 || 0, 'slate') +
+    tierRow('Tier 2 — general academic', tiers.tier_2 || 0, 'amber') +
+    tierRow('Tier 3 — domain-specific', tiers.tier_3 || 0, 'rose') +
+    ((va.tier_2_words_identified || []).length ? '<div class="mt-3"><span class="block text-[10px] uppercase tracking-wide text-slate-500 mb-1.5">Tier 2 identified</span><div class="flex flex-wrap gap-1.5">' + va.tier_2_words_identified.map(w => chip(w, 'amber')).join('') + '</div></div>' : '') +
+    ((va.tier_3_words_identified || []).length ? '<div class="mt-2.5"><span class="block text-[10px] uppercase tracking-wide text-slate-500 mb-1.5">Tier 3 identified</span><div class="flex flex-wrap gap-1.5">' + va.tier_3_words_identified.map(w => chip(w, 'rose')).join('') + '</div></div>' : '') +
+    '<div class="mt-3 pt-3 border-t border-slate-800"><span class="block text-[10px] uppercase tracking-wide text-slate-500 mb-1.5">Preserved targets — the no-dilution rule</span>' + preserved + '</div>' +
+    '<div class="mt-3 pt-3 border-t border-slate-800"><span class="block text-[10px] uppercase tracking-wide text-slate-500 mb-1.5">Recoding bridges</span>' + recoding + '</div>');
+
+  const stems = (sa.sentence_stems_added || []).length
+    ? '<ul class="space-y-1.5 mb-3">' + sa.sentence_stems_added.map(s => '<li class="text-[12px] text-indigo-200/85 pl-3 border-l-2 border-indigo-700 italic">' + esc(s) + '</li>').join('') + '</ul>'
+    : '<p class="text-[12px] text-slate-500 italic mb-3">Sentence-stem scaffolding was off for this run.</p>';
+  const glossed = (sa.glossed_terms || []).length
+    ? '<ul class="space-y-1.5">' + sa.glossed_terms.map(g => '<li class="text-[11.5px] text-slate-400"><span class="text-amber-300 font-medium">' + esc(g.term) + '</span> — ' + esc(g.gloss) + '</li>').join('') + '</ul>'
+    : '<p class="text-[12px] text-slate-500 italic">No inline glosses added.</p>';
+
+  const scaffold = card('Scaffolding applied', 'layers', 'teal',
+    '<div class="flex gap-2 mb-3 flex-wrap">' + chip(sa.cognitive_demand_level || '—', 'teal') + '</div>' +
+    '<span class="block text-[10px] uppercase tracking-wide text-slate-500 mb-1.5">Sentence stems</span>' + stems +
+    '<span class="block text-[10px] uppercase tracking-wide text-slate-500 mb-1.5">Glossed terms</span>' + glossed +
+    '<div class="mt-3 pt-3 border-t border-slate-800">' + kv('Structural changes', sa.structural_changes || '—') + '</div>');
+
+  $('#panel-diagnostics').innerHTML =
+    '<div class="grid grid-cols-1 xl:grid-cols-2 gap-4 items-start">' +
+      '<div class="space-y-4">' + readability + syntax + '</div>' +
+      '<div class="space-y-4">' + stance + vocab + scaffold + '</div>' +
+    '</div>';
+}
+
+function renderRevisions(r) {
+  const revs = r.actionable_revisions || [];
+  if (!revs.length) {
+    $('#panel-revisions').innerHTML = '<p class="text-[13px] text-slate-500 italic p-4">No further revisions proposed.</p>';
+    return;
+  }
+  const fwColor = { 'They Say / I Say': 'indigo', 'Rhetorical Grammar': 'emerald', 'Genre Analysis (Swales)': 'sky', 'Common Core Critical Vocabulary': 'amber', 'Metaphors We Live By': 'rose' };
+  $('#panel-revisions').innerHTML =
+    '<p class="text-[11.5px] text-slate-500 mb-1 flex items-center gap-1.5"><i data-lucide="user-check" class="w-3.5 h-3.5"></i> Human-in-the-loop gate — accept or reject each proposal.</p>' +
+    revs.map((v, i) =>
+      '<div class="bg-slate-950/60 rounded-lg border border-slate-800 p-4">' +
+        '<div class="flex items-center justify-between gap-2 mb-3 flex-wrap">' +
+          '<span class="text-[11px] font-semibold text-slate-500 tabular-nums">Revision ' + (i + 1) + '</span>' +
+          '<div class="flex gap-1.5 flex-wrap">' + chip(v.focus_area, 'slate') + chip(v.theoretical_framework, fwColor[v.theoretical_framework] || 'slate') + '</div>' +
+        '</div>' +
+        '<div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">' +
+          '<div class="rounded-md bg-rose-950/20 border border-rose-900/40 p-2.5">' +
+            '<span class="block text-[10px] uppercase tracking-wide text-rose-400/80 mb-1">Original</span>' +
+            '<p class="text-[12px] text-slate-300 leading-relaxed">' + esc(v.original_text_segment) + '</p></div>' +
+          '<div class="rounded-md bg-emerald-950/20 border border-emerald-900/40 p-2.5">' +
+            '<span class="block text-[10px] uppercase tracking-wide text-emerald-400/80 mb-1">Proposed</span>' +
+            '<p class="text-[12px] text-slate-200 leading-relaxed">' + esc(v.proposed_text_segment) + '</p></div>' +
+        '</div>' +
+        '<p class="text-[11.5px] text-slate-400 flex gap-1.5"><i data-lucide="corner-down-right" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-slate-600"></i>' + esc(v.concise_rationale) + '</p>' +
+      '</div>').join('');
+  lucide.createIcons();
+}
+
+/* ---------------------------------------------------------------------------
+ * 7. WIRING
+ * ------------------------------------------------------------------------- */
+function updateSourceMetrics() {
+  const s = Text.stats($('#source-text').value);
+  $('#m-words').textContent = s.words;
+  $('#m-sentences').textContent = s.sentences;
+  $('#m-fk').textContent = s.fk === null ? '—' : round1(s.fk);
+}
+function updateHints() {
+  $('#band-hint').textContent = BANDS[$('#target-grade').value].hint;
+  $('#stance-hint').textContent = STANCES[$('#pragmatic-stance').value].hint;
+}
+function switchTab(name) {
+  $$('.tab').forEach(t => {
+    const on = t.dataset.tab === name;
+    t.classList.toggle('tab-active', on);
+    t.classList.toggle('text-slate-400', !on);
+  });
+  ['output', 'compare', 'diagnostics', 'revisions', 'json']
+    .forEach(p => $('#panel-' + p).classList.toggle('hidden', p !== name));
+  if (state.result) $('#empty-state').classList.add('hidden');
+  lucide.createIcons();
+}
+function setBadge() {
+  const b = $('#mode-badge');
+  if (state.provider === 'mock' || !state.apiKey) {
+    b.className = 'px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 flex items-center gap-1.5';
+    b.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Demo Mode';
+  } else {
+    const label = state.provider === 'anthropic' ? 'claude-opus-5' : 'gpt-4o';
+    b.className = 'px-2.5 py-1 rounded-full text-[11px] font-semibold bg-indigo-500/10 text-indigo-300 border border-indigo-500/25 flex items-center gap-1.5';
+    b.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse"></span> Live — ' + label;
+  }
+}
+function toast(msg, kind) {
+  const t = document.createElement('div');
+  const color = kind === 'error' ? 'rose' : 'emerald';
+  t.className = 'fixed bottom-5 left-1/2 -translate-x-1/2 z-[60] px-4 py-2.5 rounded-lg text-[12.5px] font-medium shadow-2xl border bg-slate-900 border-' + color + '-800 text-' + color + '-200 max-w-lg';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), kind === 'error' ? 6000 : 2600);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  lucide.createIcons();
+  updateHints();
+
+  // Theory modal content
+  $('#theory-body').innerHTML = FRAMEWORKS.map(f =>
+    '<div class="rounded-lg border border-slate-800 bg-slate-950/60 p-4">' +
+      '<div class="flex items-baseline gap-2 flex-wrap mb-1">' +
+        '<h4 class="text-[13px] font-semibold text-' + f.color + '-300">' + esc(f.name) + '</h4>' +
+        '<span class="text-[11px] text-slate-500">' + esc(f.authors) + '</span>' +
+      '</div>' +
+      '<p class="text-[12px] text-slate-400 mb-2">' + esc(f.contributes) + '</p>' +
+      '<p class="text-[12px] text-slate-300 leading-relaxed pl-3 border-l-2 border-' + f.color + '-800">' + esc(f.operational) + '</p>' +
+    '</div>').join('');
+
+  $('#source-text').addEventListener('input', updateSourceMetrics);
+  $('#target-grade').addEventListener('change', updateHints);
+  $('#pragmatic-stance').addEventListener('change', updateHints);
+  $('#clear-btn').addEventListener('click', () => {
+    $('#source-text').value = ''; $('#preset-selector').value = 'custom'; updateSourceMetrics();
+  });
+
+  $('#preset-selector').addEventListener('change', e => {
+    const p = PRESETS[e.target.value];
+    if (!p) return;
+    $('#source-text').value = p.text;
+    $('#target-grade').value = p.grade;
+    $('#pragmatic-stance').value = p.stance;
+    $('#toggle-stems').checked = p.toggles.stems;
+    $('#toggle-vocab').checked = p.toggles.vocab;
+    $('#toggle-syntax').checked = p.toggles.syntax;
+    updateSourceMetrics(); updateHints();
+  });
+
+  $$('.tab').forEach(t => t.addEventListener('click', () => switchTab(t.dataset.tab)));
+
+  // Modals
+  const show = m => { m.classList.remove('hidden'); m.classList.add('flex'); };
+  const hide = m => { m.classList.add('hidden'); m.classList.remove('flex'); };
+  $('#open-api').addEventListener('click', () => show($('#api-modal')));
+  $('#open-theory').addEventListener('click', () => show($('#theory-modal')));
+  $('#close-theory').addEventListener('click', () => hide($('#theory-modal')));
+  [$('#api-modal'), $('#theory-modal')].forEach(m =>
+    m.addEventListener('click', e => { if (e.target === m) hide(m); }));
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { hide($('#api-modal')); hide($('#theory-modal')); }
+  });
+
+  $('#api-provider').addEventListener('change', e => {
+    $('#api-key-container').classList.toggle('hidden', e.target.value === 'mock');
+    $('#fallback-row').style.display = e.target.value === 'anthropic' ? '' : 'none';
+  });
+  $('#close-api').addEventListener('click', () => {
+    state.provider = $('#api-provider').value;
+    state.apiKey = $('#api-key-input').value.trim();
+    state.useFallback = $('#toggle-fallback').checked;
+    if (state.provider !== 'mock' && !state.apiKey) {
+      state.provider = 'mock';
+      toast('No key entered — staying in Demo Mode.', 'error');
+    }
+    setBadge();
+    hide($('#api-modal'));
+  });
+
+  $('#transform-btn').addEventListener('click', async () => {
+    const source = $('#source-text').value;
+    if (!source.trim()) { toast('Enter or load source text first.', 'error'); return; }
+
+    const btn = $('#transform-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<i data-lucide="loader-circle" class="w-4 h-4 animate-spin"></i> Applying the matrix…';
+    lucide.createIcons();
+
+    try {
+      const result = await runTransformation(
+        source,
+        $('#target-grade').value,
+        $('#pragmatic-stance').value,
+        { stems: $('#toggle-stems').checked, vocab: $('#toggle-vocab').checked, syntax: $('#toggle-syntax').checked }
+      );
+      renderResult(result, source);
+      switchTab('output');
+    } catch (err) {
+      console.error(err);
+      toast(err.message || 'Transformation failed.', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<i data-lucide="wand-sparkles" class="w-4 h-4"></i> Execute Transformation';
+      lucide.createIcons();
+    }
+  });
+
+  $('#copy-btn').addEventListener('click', async () => {
+    if (!state.result) { toast('Nothing to copy yet.', 'error'); return; }
+    const visible = $$('.tab').find(t => t.classList.contains('tab-active'))?.dataset.tab;
+    const payload = visible === 'json' ? JSON.stringify(state.result, null, 2) : (state.result.transformed_text || '');
+    await navigator.clipboard.writeText(payload);
+    toast(visible === 'json' ? 'JSON copied.' : 'Transformed text copied.');
+  });
+
+  $('#download-btn').addEventListener('click', () => {
+    if (!state.result) { toast('Nothing to download yet.', 'error'); return; }
+    const blob = new Blob([JSON.stringify(state.result, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'rhetorical-transformation.json';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
+
+  // Boot with a preset so the workbench is never empty on first paint.
+  $('#preset-selector').value = 'history_8th';
+  $('#preset-selector').dispatchEvent(new Event('change'));
+  setBadge();
+});
+</script>
+</body>
+</html>
