@@ -1,5 +1,11 @@
 # Rhetorical Dynamics Studio
 
+### [→ Open the live demo](https://kaminczak.github.io/rhetorical-dynamics-studio/)
+
+[![CI](https://github.com/Kaminczak/rhetorical-dynamics-studio/actions/workflows/ci.yml/badge.svg)](https://github.com/Kaminczak/rhetorical-dynamics-studio/actions/workflows/ci.yml)
+[![Pages](https://github.com/Kaminczak/rhetorical-dynamics-studio/actions/workflows/deploy-pages.yml/badge.svg)](https://github.com/Kaminczak/rhetorical-dynamics-studio/actions/workflows/deploy-pages.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 **A prompt-engineering workbench that transforms instructional text across grade bands and rhetorical stances — and shows its linguistic reasoning for every change it makes.**
 
 Paste a passage. Set a target grade band, a pragmatic stance, and the scaffolding you want. The engine rewrites the text and returns a structured diagnostic naming which rhetorical move, syntactic principle, or vocabulary rule licensed each decision.
